@@ -1,0 +1,1760 @@
+"use client";
+import React, { useState } from 'react';
+import { ChevronRight, ChevronLeft, Calendar, Users, Sparkles, Hotel, Zap, Clock, Gauge, Compass, RotateCcw } from 'lucide-react';
+
+export default function DisneyPlanner() {
+  const [step, setStep] = useState(0);
+  const [pinnedDays, setPinnedDays] = useState({});
+  const [editingDay, setEditingDay] = useState(null);
+  const [answers, setAnswers] = useState({
+    dates: { start: '', end: '' },
+    party: { adults: 2, teens: 0, kids: 0, under3: 0 },
+    days: null,
+    customDays: 8,
+    experience: null,
+    intensity: null,
+    rhythm: null,
+    property: null,
+    resort: '',
+    offPropertyTransport: null,
+    lightning: null,
+    dining: null,
+    rides: [],
+    hopper: null,
+    evenings: null,
+    arrival: null,
+    restDays: null,
+    restDayType: null,
+    waterParkInterest: null,
+    waterParkCount: null,
+    waterParkOpen: null,
+  });
+
+  const totalSteps = 13;
+
+  const update = (key, value) => setAnswers({ ...answers, [key]: value });
+  const updateNested = (key, subkey, value) =>
+    setAnswers({ ...answers, [key]: { ...answers[key], [subkey]: value } });
+
+  const next = () => setStep(s => Math.min(s + 1, totalSteps + 1));
+  const back = () => setStep(s => Math.max(s - 1, 0));
+  const reset = () => { setStep(0); setPinnedDays({}); setEditingDay(null); setAnswers({
+    dates: { start: '', end: '' },
+    party: { adults: 2, teens: 0, kids: 0, under3: 0 },
+    days: null, customDays: 8, experience: null, intensity: null, rhythm: null,
+    property: null, resort: '', offPropertyTransport: null,
+    lightning: null, dining: null,
+    rides: [], hopper: null, evenings: null,
+    arrival: null, restDays: null, restDayType: null,
+    waterParkInterest: null, waterParkCount: null, waterParkOpen: null,
+  }); };
+
+  const canAdvance = () => {
+    switch(step) {
+      case 0: return true;
+      case 1: return answers.dates.start && answers.dates.end && answers.arrival !== null;
+      case 2: return (answers.party.adults + answers.party.teens + answers.party.kids + answers.party.under3) > 0;
+      case 3: return answers.days !== null;
+      case 4: return answers.experience !== null;
+      case 5: return answers.intensity !== null;
+      case 6: return answers.rhythm !== null;
+      case 7: return answers.property !== null && (
+        (answers.property === 'on' && answers.resort) ||
+        (answers.property === 'off' && answers.offPropertyTransport !== null)
+      );
+      case 8: return answers.lightning !== null;
+      case 9: return answers.dining !== null;
+      case 10: return answers.rides.length > 0;
+      case 11: return answers.hopper !== null && answers.evenings !== null;
+      case 12: {
+        if (answers.restDays === null) return false;
+        if (answers.restDays === 'none') return true;
+        return answers.restDayType !== null;
+      }
+      case 13: {
+        const numDays = typeof answers.days === 'number' ? answers.days : 4;
+        // Water park step only shown for 5+ day trips — auto-pass if shorter
+        if (numDays < 5) return true;
+        if (answers.waterParkInterest === null) return false;
+        if (answers.waterParkInterest === 'no') return true;
+        return answers.waterParkCount !== null && answers.waterParkOpen !== null;
+      }
+      default: return false;
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full" style={{
+      background: 'linear-gradient(180deg, #f4f1ea 0%, #ebe5d8 100%)',
+      fontFamily: 'Georgia, "Times New Roman", serif',
+    }}>
+      <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
+        <header className="mb-16">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm tracking-[0.25em] uppercase text-stone-900" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500 }}>
+              Wished
+            </div>
+            {step > 0 && step <= totalSteps && (
+              <div className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                {step} / {totalSteps}
+              </div>
+            )}
+          </div>
+          <div className="h-px bg-stone-400/40 w-full"></div>
+        </header>
+
+        {step > 0 && step <= totalSteps && (
+          <div className="flex gap-1 mb-12">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div
+                key={i}
+                className="h-0.5 flex-1 transition-all duration-500"
+                style={{ background: i < step ? '#1c1917' : '#d6d3d1' }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="min-h-[400px]">
+          {step === 0 && <Intro onStart={next} />}
+          {step === 1 && <DatesStep dates={answers.dates} arrival={answers.arrival} onChange={(k,v) => updateNested('dates', k, v)} onArrival={v => update('arrival', v)} />}
+          {step === 2 && <PartyStep party={answers.party} onChange={(k,v) => updateNested('party', k, v)} />}
+          {step === 3 && <DaysStep value={answers.days} customDays={answers.customDays} onChange={v => update('days', v)} onCustomDays={v => update('customDays', v)} />}
+          {step === 4 && <ExperienceStep value={answers.experience} onChange={v => update('experience', v)} />}
+          {step === 5 && <IntensityStep value={answers.intensity} onChange={v => update('intensity', v)} />}
+          {step === 6 && <RhythmStep value={answers.rhythm} onChange={v => update('rhythm', v)} />}
+          {step === 7 && <PropertyStep property={answers.property} resort={answers.resort} transport={answers.offPropertyTransport} onProperty={v => update('property', v)} onResort={v => update('resort', v)} onTransport={v => update('offPropertyTransport', v)} />}
+          {step === 8 && <LightningStep value={answers.lightning} onChange={v => update('lightning', v)} />}
+          {step === 9 && <DiningStep value={answers.dining} onChange={v => update('dining', v)} />}
+          {step === 10 && <RidesStep value={answers.rides} onChange={v => update('rides', v)} />}
+          {step === 11 && <ExtrasStep hopper={answers.hopper} evenings={answers.evenings} onHopper={v => update('hopper', v)} onEvenings={v => update('evenings', v)} />}
+          {step === 12 && <RestDaysStep restDays={answers.restDays} restDayType={answers.restDayType} onRestDays={v => update('restDays', v)} onRestDayType={v => update('restDayType', v)} />}
+          {step === 13 && <WaterParkStep
+            numDays={typeof answers.days === 'number' ? answers.days : 4}
+            interest={answers.waterParkInterest}
+            count={answers.waterParkCount}
+            open={answers.waterParkOpen}
+            onInterest={v => update('waterParkInterest', v)}
+            onCount={v => update('waterParkCount', v)}
+            onOpen={v => update('waterParkOpen', v)}
+            onAutoSkip={() => {
+              // For short trips, auto-set to 'no' and advance
+              if (answers.waterParkInterest === null) update('waterParkInterest', 'no');
+            }}
+          />}
+          {step === 14 && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
+        </div>
+
+        {step > 0 && step <= totalSteps && (
+          <div className="mt-16 flex items-center justify-between">
+            <button
+              onClick={back}
+              className="flex items-center gap-2 text-sm tracking-wider uppercase text-stone-600 hover:text-stone-900 transition-colors"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+            >
+              <ChevronLeft size={16} /> Back
+            </button>
+            <button
+              onClick={next}
+              disabled={!canAdvance()}
+              className="flex items-center gap-3 px-8 py-3 text-sm tracking-[0.2em] uppercase transition-all"
+              style={{
+                fontFamily: 'Helvetica, Arial, sans-serif',
+                background: canAdvance() ? '#1c1917' : '#a8a29e',
+                color: '#f4f1ea',
+                cursor: canAdvance() ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {step === totalSteps ? 'Build my plan' : 'Continue'} <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Intro({ onStart }) {
+  return (
+    <div>
+      <div className="space-y-8 mb-24">
+        <div className="text-xs tracking-[0.4em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Walt Disney World, the way you wished
+        </div>
+        <h1 className="text-5xl md:text-7xl leading-[0.95] text-stone-900 font-normal italic">
+          Wish it.<br />We'll plan<br />the rest.
+        </h1>
+        <p className="text-lg text-stone-700 max-w-xl leading-relaxed">
+          Thirteen questions. A tailored strategy — which parks on which days,
+          where to stay, how to handle Lightning Lane, and what to book before
+          you go. No hourly schedules. Just a plan that makes sense for the
+          people you're going with.
+        </p>
+        <button
+          onClick={onStart}
+          className="mt-8 px-10 py-4 text-sm tracking-[0.25em] uppercase transition-all hover:opacity-90"
+          style={{
+            fontFamily: 'Helvetica, Arial, sans-serif',
+            background: '#1c1917',
+            color: '#f4f1ea',
+          }}
+        >
+          Build my plan →
+        </button>
+        <p className="text-xs text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Free. No sign-up. Takes about four minutes.
+        </p>
+      </div>
+
+      <div className="border-t border-stone-300 pt-16 mb-24">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Why this exists
+        </div>
+        <p className="text-2xl md:text-3xl text-stone-800 italic leading-snug max-w-2xl mb-8" style={{ fontFamily: 'Georgia, serif' }}>
+          Every party is different — ages, budget, pace, what you actually want
+          from the trip. The existing tools either give you a one-size-fits-all
+          schedule, or a forum thread you have to read for six hours.
+        </p>
+        <p className="text-stone-700 max-w-2xl leading-relaxed">
+          We built this because nobody else takes all the variables and gives
+          you a plan that lands. Crowd patterns, your party shape, where
+          you're staying, the rides you actually want to do, the events
+          happening that week — they all change the right answer. This tool
+          works through them and tells you what to do.
+        </p>
+      </div>
+
+      <div className="border-t border-stone-300 pt-16 mb-24">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Who this is for
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div>
+            <div className="text-sm tracking-[0.2em] uppercase text-stone-900 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>
+              The right fit
+            </div>
+            <p className="text-stone-700 leading-relaxed">
+              First-time visitors, or families who've been once or twice and want to do it properly next time. We help you make the calls that aren't obvious — which park on which day, when Lightning Lane earns its keep, what to book and what to skip.
+            </p>
+          </div>
+          <div>
+            <div className="text-sm tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>
+              The wrong fit
+            </div>
+            <p className="text-stone-600 leading-relaxed">
+              Annual passholders, frequent visitors, or anyone who already knows their way around. You don't need us — and you probably already disagree with half our recommendations.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-stone-300 pt-16 text-center">
+        <p className="text-stone-600 mb-8 max-w-md mx-auto" style={{ fontFamily: 'Georgia, serif' }}>
+          Ready to plan?
+        </p>
+        <button
+          onClick={onStart}
+          className="px-10 py-4 text-sm tracking-[0.25em] uppercase transition-all hover:opacity-90"
+          style={{
+            fontFamily: 'Helvetica, Arial, sans-serif',
+            background: '#1c1917',
+            color: '#f4f1ea',
+          }}
+        >
+          Build my plan →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepHeader({ icon: Icon, eyebrow, title, sub }) {
+  return (
+    <div className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <Icon size={18} className="text-stone-600" strokeWidth={1.5} />
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          {eyebrow}
+        </div>
+      </div>
+      <h2 className="text-3xl md:text-4xl text-stone-900 font-normal italic mb-3 leading-tight">
+        {title}
+      </h2>
+      {sub && <p className="text-stone-600 leading-relaxed max-w-lg">{sub}</p>}
+    </div>
+  );
+}
+
+function DatesStep({ dates, arrival, onChange, onArrival }) {
+  const arrivalOpts = [
+    { v: 'morning', label: 'Morning · before 11am' },
+    { v: 'midday', label: 'Midday · 11am-3pm' },
+    { v: 'evening', label: 'Late afternoon · after 3pm' },
+    { v: 'night', label: 'Evening · after 7pm' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Calendar} eyebrow="Question 1" title="When are you going?" sub="We'll cross-reference crowd levels, special events, and any park early-closures across these dates." />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <DateField label="Arrival" value={dates.start} onChange={v => onChange('start', v)} />
+        <DateField label="Departure" value={dates.end} onChange={v => onChange('end', v)} />
+      </div>
+      <div>
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          What time do you arrive on Day 1?
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {arrivalOpts.map(o => (
+            <button
+              key={o.v}
+              onClick={() => onArrival(o.v)}
+              className="text-left p-3 transition-all border"
+              style={{
+                background: arrival === o.v ? '#1c1917' : '#fafaf9',
+                color: arrival === o.v ? '#f4f1ea' : '#1c1917',
+                borderColor: arrival === o.v ? '#1c1917' : '#d6d3d1',
+                fontFamily: 'Georgia, serif',
+                fontSize: '0.9rem',
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DateField({ label, value, onChange }) {
+  return (
+    <label className="block">
+      <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{label}</div>
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full bg-transparent border-b border-stone-400 pb-2 text-lg text-stone-900 focus:outline-none focus:border-stone-900 transition-colors"
+        style={{ fontFamily: 'Georgia, serif' }}
+      />
+    </label>
+  );
+}
+
+function PartyStep({ party, onChange }) {
+  const groups = [
+    { key: 'adults', label: 'Adults', sub: '18+' },
+    { key: 'teens', label: 'Teens', sub: '13–17' },
+    { key: 'kids', label: 'Kids', sub: '3–12' },
+    { key: 'under3', label: 'Under 3', sub: 'Free entry' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Users} eyebrow="Question 2" title="Who's going?" sub="Ages drive ride access, height restrictions, pace, and how we handle Rider Swap if some of you do thrills and others don't." />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {groups.map(g => (
+          <Counter key={g.key} label={g.label} sub={g.sub} value={party[g.key]} onChange={v => onChange(g.key, v)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Counter({ label, sub, value, onChange }) {
+  return (
+    <div className="border border-stone-300 p-5 bg-stone-50/50">
+      <div className="text-sm tracking-wider uppercase text-stone-700 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{label}</div>
+      <div className="text-xs text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{sub}</div>
+      <div className="flex items-center justify-between">
+        <button onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">−</button>
+        <div className="text-3xl text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>{value}</div>
+        <button onClick={() => onChange(value + 1)} className="w-8 h-8 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">+</button>
+      </div>
+    </div>
+  );
+}
+
+function DaysStep({ value, customDays, onChange, onCustomDays }) {
+  const opts = [
+    { v: 2, label: '2 days' }, { v: 3, label: '3 days' }, { v: 4, label: '4 days' },
+    { v: 5, label: '5 days' }, { v: 6, label: '6 days' }, { v: 'custom', label: '7 or more days' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Clock} eyebrow="Question 3" title="How many days in the parks?" sub="Not your full trip — just the days you'll have park tickets for." />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        {opts.map(o => <SelectCard
+          key={o.v}
+          selected={value === o.v || (o.v === 'custom' && typeof value === 'number' && value >= 7)}
+          onClick={() => onChange(o.v === 'custom' ? customDays : o.v)}
+          title={o.label}
+          sub=""
+        />)}
+      </div>
+      {(typeof value === 'number' && value >= 7) && (
+        <div className="border border-stone-300 p-5 bg-stone-50/50">
+          <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>How many days exactly?</div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => onChange(Math.max(7, value - 1))} className="w-10 h-10 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">−</button>
+            <div className="text-3xl text-stone-900 min-w-[3rem] text-center" style={{ fontFamily: 'Georgia, serif' }}>{value}</div>
+            <button onClick={() => onChange(Math.min(21, value + 1))} className="w-10 h-10 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">+</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExperienceStep({ value, onChange }) {
+  const opts = [
+    { v: 'first', label: 'First-timers', sub: "Headline experiences come first. We'll prioritise the unmissables." },
+    { v: 'returning', label: 'Been before', sub: "You know the basics. We'll focus on what's new and what you've missed." },
+    { v: 'mixed', label: 'Mixed', sub: "Some first-timers, some veterans. We'll balance both." },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Compass} eyebrow="Question 4" title="First trip or returning?" sub="This changes everything about prioritisation." />
+      <div className="space-y-3">
+        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
+      </div>
+    </div>
+  );
+}
+
+function IntensityStep({ value, onChange }) {
+  const opts = [
+    { v: 'all', label: 'Everything, including the big coasters', sub: 'Tron, Rise, Guardians, Slinky, Tower of Terror — all in.' },
+    { v: 'family', label: 'Family rides and gentler thrills', sub: 'Splash-level intensity, no inverted coasters.' },
+    { v: 'calm', label: 'Mostly the calm stuff', sub: 'Theming, shows, character meets, dark rides.' },
+    { v: 'split', label: "Mixed — some will, some won't", sub: "We'll plan Rider Swap into the day." },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Gauge} eyebrow="Question 5" title="How much thrill?" sub="Be honest — this drives which parks get more time and how we sequence the day." />
+      <div className="space-y-3">
+        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
+      </div>
+    </div>
+  );
+}
+
+function RhythmStep({ value, onChange }) {
+  const opts = [
+    { v: 'rope', label: 'Rope drop to close', sub: 'Long days, maximum park time.' },
+    { v: 'split', label: 'Early start, midday break, evening return', sub: 'Pool or nap in the afternoon.' },
+    { v: 'late', label: 'Late start, stay till close', sub: 'Sleep in, evening parks.' },
+    { v: 'morning', label: 'Mornings only', sub: 'Out by lunch most days.' },
+    { v: 'unsure', label: 'Not sure — recommend', sub: "We'll suggest based on your party and dates." },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Sparkles} eyebrow="Question 6" title="What's your park rhythm?" sub="Long days drain young kids. Late starts waste cool morning hours. There's no right answer — just yours." />
+      <div className="space-y-3">
+        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
+      </div>
+    </div>
+  );
+}
+
+function PropertyStep({ property, resort, transport, onProperty, onResort, onTransport }) {
+  const resorts = [
+    'Grand Floridian', 'Polynesian', 'Contemporary', 'Wilderness Lodge',
+    'BoardWalk', 'Beach/Yacht Club', 'Riviera', 'Caribbean Beach',
+    'Coronado Springs', 'Animal Kingdom Lodge', 'Port Orleans',
+    'Pop Century', 'All-Star Resorts', 'Art of Animation', 'Other Disney resort',
+  ];
+  const transportOpts = [
+    { v: 'rental', label: 'Rental car', sub: 'Drive to each park. Most flexible, but parking is $30/day.' },
+    { v: 'rideshare', label: 'Uber/Lyft', sub: 'No parking hassle, but adds £15-30 per trip.' },
+    { v: 'mears', label: 'Mears Connect or shuttle', sub: 'Cheaper but less flexible — fixed schedule.' },
+    { v: 'walk', label: 'Walking distance hotel', sub: 'Some parks walkable, others need a quick drive.' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Hotel} eyebrow="Question 7" title="Where are you staying?" sub="On-property gets you Early Theme Park Entry and easier transport. Off-property usually wins on space and cost." />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <SelectCard selected={property === 'on'} onClick={() => onProperty('on')} title="On Disney property" sub="Disney resort, with park transport included." />
+        <SelectCard selected={property === 'off'} onClick={() => onProperty('off')} title="Off-property" sub="Hotel, villa, or rental nearby." />
+      </div>
+      {property === 'on' && (
+        <div>
+          <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Which resort?</div>
+          <select
+            value={resort}
+            onChange={e => onResort(e.target.value)}
+            className="w-full bg-transparent border-b border-stone-400 pb-2 text-lg text-stone-900 focus:outline-none focus:border-stone-900"
+            style={{ fontFamily: 'Georgia, serif' }}
+          >
+            <option value="">Select your resort…</option>
+            {resorts.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+      )}
+      {property === 'off' && (
+        <div>
+          <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>How are you getting to the parks?</div>
+          <div className="space-y-3">
+            {transportOpts.map(o => <SelectCard key={o.v} selected={transport === o.v} onClick={() => onTransport(o.v)} title={o.label} sub={o.sub} />)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LightningStep({ value, onChange }) {
+  const opts = [
+    { v: 'always', label: 'Yes, every park day', sub: 'Multi Pass on every day. Maximum convenience, maximum cost.' },
+    { v: 'smart', label: 'Where it earns its keep', sub: "We'll recommend per day — heavy parks, high-crowd days only." },
+    { v: 'none', label: 'Avoid it entirely', sub: 'Standby only. Rope drop discipline required.' },
+    { v: 'unsure', label: 'Recommend', sub: 'Based on your dates and party — we\'ll tell you.' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Zap} eyebrow="Question 8" title="Lightning Lane?" sub="Disney's paid line-skip system. Most experienced parties pay selectively, not always." />
+      <div className="space-y-3">
+        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
+      </div>
+    </div>
+  );
+}
+
+function DiningStep({ value, onChange }) {
+  const opts = [
+    { v: 'full', label: 'Sit-down meals most days', sub: "You want the table-service experience." },
+    { v: 'mix', label: 'A few standouts, counter-service the rest', sub: 'Two or three really good sit-downs.' },
+    { v: 'qs', label: 'Counter-service throughout', sub: 'No reservations, no waiting around.' },
+    { v: 'unsure', label: 'Recommend', sub: "We'll suggest based on your party and pace." },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Sparkles} eyebrow="Question 9" title="How do you want to eat?" sub="Table-service restaurants need booking 60 days out at 7am ET. Some love that. Plenty don't." />
+      <div className="space-y-3">
+        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
+      </div>
+    </div>
+  );
+}
+
+function RidesStep({ value, onChange }) {
+  const ridesByPark = {
+    'Magic Kingdom': [
+      { id: 'tron', label: 'Tron Lightcycle / Run' },
+      { id: 'sevendwarfs', label: 'Seven Dwarfs Mine Train' },
+      { id: 'spacemountain', label: 'Space Mountain' },
+      { id: 'bigthunder', label: 'Big Thunder Mountain' },
+      { id: 'haunted', label: 'Haunted Mansion' },
+      { id: 'pirates', label: 'Pirates of the Caribbean' },
+      { id: 'peterpan', label: "Peter Pan's Flight" },
+    ],
+    'EPCOT': [
+      { id: 'guardians', label: 'Guardians of the Galaxy: Cosmic Rewind' },
+      { id: 'testtrack', label: 'Test Track' },
+      { id: 'frozen', label: 'Frozen Ever After' },
+      { id: 'remy', label: "Remy's Ratatouille Adventure" },
+      { id: 'soarin', label: "Soarin' Around the World" },
+    ],
+    'Hollywood Studios': [
+      { id: 'rise', label: 'Rise of the Resistance' },
+      { id: 'slinky', label: 'Slinky Dog Dash' },
+      { id: 'tot', label: 'Tower of Terror' },
+      { id: 'rnr', label: "Rock 'n' Roller Coaster" },
+      { id: 'smugglers', label: 'Millennium Falcon: Smugglers Run' },
+      { id: 'mmrr', label: "Mickey & Minnie's Runaway Railway" },
+    ],
+    'Animal Kingdom': [
+      { id: 'fop', label: 'Avatar Flight of Passage' },
+      { id: 'navi', label: "Na'vi River Journey" },
+      { id: 'safari', label: 'Kilimanjaro Safaris' },
+      { id: 'everest', label: 'Expedition Everest' },
+    ],
+  };
+
+  const toggle = (id) => {
+    onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id]);
+  };
+
+  return (
+    <div>
+      <StepHeader icon={Sparkles} eyebrow="Question 10" title="Which rides do you actually want?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
+      <div className="space-y-6">
+        {Object.entries(ridesByPark).map(([park, rides]) => (
+          <div key={park}>
+            <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{park}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {rides.map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => toggle(r.id)}
+                  className="text-left p-3 transition-all border"
+                  style={{
+                    background: value.includes(r.id) ? '#1c1917' : '#fafaf9',
+                    color: value.includes(r.id) ? '#f4f1ea' : '#1c1917',
+                    borderColor: value.includes(r.id) ? '#1c1917' : '#d6d3d1',
+                  }}
+                >
+                  <div className="text-sm" style={{ fontFamily: 'Georgia, serif' }}>{r.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 text-sm text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        {value.length} selected
+      </div>
+    </div>
+  );
+}
+
+function ExtrasStep({ hopper, evenings, onHopper, onEvenings }) {
+  const hopperOpts = [
+    { v: 'yes', label: 'Yes, park hopper', sub: 'Switch parks after 2pm. ~$80/person extra.' },
+    { v: 'no', label: 'No, single park per day', sub: 'Standard ticket.' },
+    { v: 'unsure', label: 'Recommend', sub: "We'll tell you whether it's worth it." },
+  ];
+  const eveningsOpts = [
+    { v: 'late', label: "We'll stay for fireworks", sub: 'Happily Ever After at MK, Fantasmic at HS.' },
+    { v: 'flex', label: 'Sometimes', sub: 'Some nights yes, some nights no.' },
+    { v: 'early', label: 'Out by 8pm most nights', sub: 'Kids in bed, or just not built for late nights.' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Compass} eyebrow="Question 11" title="A couple more" sub="Park hopper, and how late the party can stay out." />
+      <div className="mb-10">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Park hopper?</div>
+        <div className="space-y-3">
+          {hopperOpts.map(o => <SelectCard key={o.v} selected={hopper === o.v} onClick={() => onHopper(o.v)} title={o.label} sub={o.sub} />)}
+        </div>
+      </div>
+      <div>
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Evenings — how late can you stay?</div>
+        <div className="space-y-3">
+          {eveningsOpts.map(o => <SelectCard key={o.v} selected={evenings === o.v} onClick={() => onEvenings(o.v)} title={o.label} sub={o.sub} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RestDaysStep({ restDays, restDayType, onRestDays, onRestDayType }) {
+  const restOpts = [
+    { v: 'middle', label: 'Yes, in the middle of the trip', sub: 'Around day 4-5 of a longer trip.' },
+    { v: 'spread', label: 'Yes, every 4-5 park days', sub: 'Built-in pauses to keep energy high.' },
+    { v: 'flexible', label: 'Yes, recommend timing', sub: "We'll place them based on park sequence." },
+    { v: 'none', label: 'No rest days', sub: "Park every day — you'll rest when you get home." },
+  ];
+  const typeOpts = [
+    { v: 'full', label: 'Full rest day', sub: 'Pool, resort, Disney Springs.' },
+    { v: 'morning', label: 'Morning rest, evening park', sub: 'Lie in, pool morning, park from 4pm.' },
+    { v: 'evening', label: 'Park morning, afternoon off', sub: 'Rope drop, park until 1pm, pool afternoon.' },
+    { v: 'waterpark', label: 'Water park day', sub: 'Blizzard Beach or Typhoon Lagoon (separate ticket).' },
+  ];
+  return (
+    <div>
+      <StepHeader icon={Sparkles} eyebrow="Question 12" title="Rest days?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
+      <div className={restDays && restDays !== 'none' ? 'mb-10' : ''}>
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Do you want rest days built in?</div>
+        <div className="space-y-3">
+          {restOpts.map(o => <SelectCard key={o.v} selected={restDays === o.v} onClick={() => onRestDays(o.v)} title={o.label} sub={o.sub} />)}
+        </div>
+      </div>
+      {restDays && restDays !== 'none' && (
+        <div>
+          <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>What kind of rest day?</div>
+          <div className="space-y-3">
+            {typeOpts.map(o => <SelectCard key={o.v} selected={restDayType === o.v} onClick={() => onRestDayType(o.v)} title={o.label} sub={o.sub} />)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, onOpen }) {
+  // For trips under 5 days, water parks aren't realistic — show a skip message
+  if (numDays < 5) {
+    return (
+      <div>
+        <StepHeader icon={Sparkles} eyebrow="Question 13" title="Water parks" sub="Your trip's too short to add a water park day — they need a full day, and you'll get more out of the main parks. Skipping this." />
+      </div>
+    );
+  }
+
+  const interestOpts = [
+    { v: 'yes', label: 'Yes, a definite yes', sub: "We'll build a water park day into the plan." },
+    { v: 'maybe', label: 'Maybe, if it fits', sub: "We'll suggest it but keep it flexible." },
+    { v: 'no', label: 'No, skip them', sub: "Stick to the four main parks." },
+  ];
+
+  const countOpts = [
+    { v: 1, label: 'Just one day', sub: 'A single water park visit during the trip.' },
+    { v: 2, label: 'Two days', sub: 'Either both parks if open, or two visits to the same one.' },
+  ];
+
+  const openOpts = [
+    { v: 'typhoon', label: 'Typhoon Lagoon', sub: 'The more themed of the two — more relaxed, scenic.' },
+    { v: 'blizzard', label: 'Blizzard Beach', sub: 'More slides, more thrill-focused.' },
+    { v: 'both', label: 'Both are open', sub: "You've got the full choice." },
+    { v: 'unsure', label: "Not sure — we'll flag it for you to check", sub: "Disney's calendar will confirm closer to your trip." },
+  ];
+
+  return (
+    <div>
+      <StepHeader
+        icon={Sparkles}
+        eyebrow="Question 13"
+        title="Water parks?"
+        sub="Disney has two — Typhoon Lagoon and Blizzard Beach. Usually only one is open at a time; check Disney's calendar to confirm."
+      />
+      <div className="mb-10">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Are you interested in a water park day?
+        </div>
+        <div className="space-y-3">
+          {interestOpts.map(o => <SelectCard key={o.v} selected={interest === o.v} onClick={() => onInterest(o.v)} title={o.label} sub={o.sub} />)}
+        </div>
+      </div>
+
+      {(interest === 'yes' || interest === 'maybe') && (
+        <>
+          <div className="mb-10">
+            <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              How many water park days?
+            </div>
+            <div className="space-y-3">
+              {countOpts.map(o => <SelectCard key={o.v} selected={count === o.v} onClick={() => onCount(o.v)} title={o.label} sub={o.sub} />)}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              Which is open during your trip?
+            </div>
+            <div className="space-y-3">
+              {openOpts.map(o => <SelectCard key={o.v} selected={open === o.v} onClick={() => onOpen(o.v)} title={o.label} sub={o.sub} />)}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SelectCard({ selected, onClick, title, sub }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left p-5 transition-all border"
+      style={{
+        background: selected ? '#1c1917' : '#fafaf9',
+        color: selected ? '#f4f1ea' : '#1c1917',
+        borderColor: selected ? '#1c1917' : '#d6d3d1',
+      }}
+    >
+      <div className="text-base mb-1" style={{ fontFamily: 'Georgia, serif' }}>{title}</div>
+      {sub && <div className="text-sm leading-relaxed" style={{
+        fontFamily: 'Helvetica, Arial, sans-serif',
+        color: selected ? '#d6d3d1' : '#78716c',
+      }}>{sub}</div>}
+    </button>
+  );
+}
+
+function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
+  const days = generateStubDays(answers, pinnedDays);
+
+  const pinDay = (dayIdx, value) => {
+    setPinnedDays({ ...pinnedDays, [dayIdx]: value });
+    setEditingDay(null);
+  };
+
+  const clearPin = (dayIdx) => {
+    const newPins = { ...pinnedDays };
+    delete newPins[dayIdx];
+    setPinnedDays(newPins);
+    setEditingDay(null);
+  };
+
+  return (
+    <div>
+      <div className="mb-12">
+        <div className="text-xs tracking-[0.4em] uppercase text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Your strategy
+        </div>
+        <h1 className="text-4xl md:text-5xl text-stone-900 font-normal italic leading-tight mb-6">
+          {generateHeadline(answers)}
+        </h1>
+        <p className="text-lg text-stone-700 leading-relaxed max-w-2xl">
+          {generateSummary(answers, days)}
+        </p>
+      </div>
+
+      <div className="border-t border-stone-300 pt-10 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-xs tracking-[0.3em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            Day by day
+          </div>
+          <div className="text-xs text-stone-500 italic" style={{ fontFamily: 'Georgia, serif' }}>
+            Tap any day to change it
+          </div>
+        </div>
+        <div className="space-y-8">
+          {days.map((d, i) => {
+            const isPinned = pinnedDays[i] !== undefined;
+            const warning = isPinned ? checkPinWarning(i, pinnedDays[i], d, answers) : null;
+            return (
+              <div key={i} className="pb-10 border-b border-stone-200 last:border-0">
+                <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-6">
+                  <div>
+                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                      Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
+                    </div>
+                    <div className="text-2xl text-stone-900 italic mb-2 flex items-center gap-2 flex-wrap" style={{ fontFamily: 'Georgia, serif' }}>
+                      {d.park}
+                      {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                      {isPinned && (
+                        <span className="text-xs not-italic px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                          Pinned
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setEditingDay(editingDay === i ? null : i)}
+                      className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2 mt-1"
+                      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                    >
+                      {editingDay === i ? 'Close' : 'Change'}
+                    </button>
+                  </div>
+                  <div>
+                    {warning && (
+                      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-sm text-amber-900" style={{ fontFamily: 'Georgia, serif' }}>
+                        <span className="font-semibold not-italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Heads up · </span>
+                        {warning}
+                      </div>
+                    )}
+                    <p className="text-stone-800 leading-relaxed mb-5 italic" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
+                    {typeof d.rationale === 'object' && (
+                      <div className="space-y-4">
+                        {d.rationale.morning && (
+                          <div className="grid grid-cols-[80px_1fr] gap-4">
+                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Morning</div>
+                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.morning}</div>
+                          </div>
+                        )}
+                        {d.rationale.afternoon && (
+                          <div className="grid grid-cols-[80px_1fr] gap-4">
+                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Afternoon</div>
+                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.afternoon}</div>
+                          </div>
+                        )}
+                        {d.rationale.evening && (
+                          <div className="grid grid-cols-[80px_1fr] gap-4">
+                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Evening</div>
+                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.evening}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {d.flag && (
+                      <div className="inline-block text-xs tracking-wider uppercase px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 mt-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                        ⚑ {d.flag}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {editingDay === i && (
+                  <div className="mt-6 ml-0 md:ml-[164px] p-5 bg-stone-50 border border-stone-300">
+                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                      Change Day {i + 1} to:
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                      {['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom', 'Rest day', 'Water park'].map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => pinDay(i, opt)}
+                          className="text-left p-2 text-sm border transition-all"
+                          style={{
+                            background: d.park === opt ? '#1c1917' : '#fff',
+                            color: d.park === opt ? '#f4f1ea' : '#1c1917',
+                            borderColor: d.park === opt ? '#1c1917' : '#d6d3d1',
+                            fontFamily: 'Georgia, serif',
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                    {isPinned && (
+                      <button
+                        onClick={() => clearPin(i)}
+                        className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2"
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                      >
+                        Remove pin · let us decide
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="border-t border-stone-300 pt-10 mb-12">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Book these now
+        </div>
+        <p className="text-sm text-stone-600 mb-8 max-w-xl" style={{ fontFamily: 'Georgia, serif' }}>
+          The actions worth taking now, ordered by what'll bite you if you skip it.
+        </p>
+        <div className="space-y-5">
+          {generateActions(answers, days).map((a, i) => (
+            <div key={i} className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4 pb-5 border-b border-stone-200 last:border-0">
+              <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                {a.category}
+              </div>
+              <div>
+                <div className="text-stone-900 leading-snug mb-1" style={{ fontFamily: 'Georgia, serif' }}>{a.what}</div>
+                <div className="text-sm text-stone-500 leading-relaxed" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{a.when}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={onReset}
+        className="flex items-center gap-2 text-sm tracking-wider uppercase text-stone-600 hover:text-stone-900 transition-colors"
+        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+      >
+        <RotateCcw size={14} /> Start over
+      </button>
+    </div>
+  );
+}
+
+// Warning logic — when a user pin overrides a smart default, tell them what we'd have chosen and why
+function checkPinWarning(dayIdx, pinnedPark, day, a) {
+  const isArrival = dayIdx === 0;
+  const isDeparture = day.date && a.dates.end && day.date.toISOString().split('T')[0] === a.dates.end;
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const heavyPark = pinnedPark === 'Magic Kingdom' || pinnedPark === 'Hollywood Studios';
+  const dow = day.date ? day.date.getDay() : null;
+  const crowd = day.crowd;
+
+  // Arrival day with a heavy park
+  if (isArrival && heavyPark && hasYoungKids) {
+    return `${pinnedPark} on arrival day with young kids is a tough start — the park demands a full day and energy fades fast on travel days. We'd normally put a lighter park here.`;
+  }
+  if (isArrival && heavyPark) {
+    return `Day 1 at ${pinnedPark} means you're going hard on a travel day. Doable, but you'll get more from it on a non-arrival day.`;
+  }
+
+  // High-crowd warning
+  if (crowd && crowd >= 8) {
+    return `${pinnedPark} on this day looks busy (crowd level ${crowd}/10). Another day in your window would likely be quieter — but if the date is locked for a specific reason like Fantasmic or a dining reservation, this is fine.`;
+  }
+
+  // Halloween/Christmas party warning for Magic Kingdom
+  if (pinnedPark === 'Magic Kingdom' && dow !== null) {
+    const month = day.date.getMonth();
+    if ((month === 7 || month === 8 || month === 9) && [0, 1, 3, 4, 5].includes(dow)) {
+      return `This date is likely a Halloween Party night — Magic Kingdom may close to day-ticket guests at 6pm. Verify the date or you'll lose the evening.`;
+    }
+    if (month === 10 && [0, 1, 2, 4, 5].includes(dow)) {
+      return `This date is likely a Christmas Party night — Magic Kingdom may close to day-ticket guests at 6pm.`;
+    }
+  }
+
+  // Rest day in a weird position
+  if (pinnedPark === 'Rest day' && (isArrival || isDeparture)) {
+    return `A rest day on ${isArrival ? 'arrival' : 'departure'} day is unusual — these are usually short days anyway, so a planned park day uses them better.`;
+  }
+
+  return null;
+}
+
+function CrowdDot({ level }) {
+  const label = level <= 3 ? 'Quiet' : level <= 5 ? 'Moderate' : level <= 7 ? 'Busy' : 'Very busy';
+  const colour = level <= 3 ? '#65a30d' : level <= 5 ? '#a16207' : level <= 7 ? '#c2410c' : '#991b1b';
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs not-italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+      <span className="inline-block w-2 h-2 rounded-full" style={{ background: colour }} />
+      <span style={{ color: colour }}>{label}</span>
+    </span>
+  );
+}
+
+const RESORTS = {
+  'Grand Floridian': { tier: 'deluxe', transport: { mk: 'monorail-walk', epcot: 'bus-monorail', hs: 'bus', ak: 'bus' }, walkable: ['Magic Kingdom'] },
+  'Polynesian': { tier: 'deluxe', transport: { mk: 'monorail-walk', epcot: 'monorail-bus', hs: 'bus', ak: 'bus' }, walkable: ['Magic Kingdom'] },
+  'Contemporary': { tier: 'deluxe', transport: { mk: 'walk', epcot: 'bus-monorail', hs: 'bus', ak: 'bus' }, walkable: ['Magic Kingdom'] },
+  'Wilderness Lodge': { tier: 'deluxe', transport: { mk: 'boat', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+  'BoardWalk': { tier: 'deluxe', transport: { mk: 'bus', epcot: 'walk-skyliner', hs: 'walk-boat-skyliner', ak: 'bus' }, walkable: ['EPCOT', 'Hollywood Studios'] },
+  'Beach/Yacht Club': { tier: 'deluxe', transport: { mk: 'bus', epcot: 'walk', hs: 'walk-boat-skyliner', ak: 'bus' }, walkable: ['EPCOT', 'Hollywood Studios'] },
+  'Riviera': { tier: 'deluxe-villa', transport: { mk: 'bus', epcot: 'skyliner', hs: 'skyliner', ak: 'bus' }, skyliner: true },
+  'Caribbean Beach': { tier: 'moderate', transport: { mk: 'bus', epcot: 'skyliner', hs: 'skyliner', ak: 'bus' }, skyliner: true },
+  'Coronado Springs': { tier: 'moderate', transport: { mk: 'bus', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+  'Animal Kingdom Lodge': { tier: 'deluxe', transport: { mk: 'bus', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+  'Port Orleans': { tier: 'moderate', transport: { mk: 'bus', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+  'Pop Century': { tier: 'value', transport: { mk: 'bus', epcot: 'skyliner', hs: 'skyliner', ak: 'bus' }, skyliner: true },
+  'All-Star Resorts': { tier: 'value', transport: { mk: 'bus', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+  'Art of Animation': { tier: 'value', transport: { mk: 'bus', epcot: 'skyliner', hs: 'skyliner', ak: 'bus' }, skyliner: true },
+  'Other Disney resort': { tier: 'unknown', transport: { mk: 'bus', epcot: 'bus', hs: 'bus', ak: 'bus' } },
+};
+
+function getResortTransport(resortName, park) {
+  const resort = RESORTS[resortName];
+  if (!resort) return 'bus';
+  const key = park === 'Magic Kingdom' ? 'mk' : park === 'EPCOT' ? 'epcot' : park === 'Hollywood Studios' ? 'hs' : 'ak';
+  return resort.transport[key];
+}
+
+function isResortWalkable(resortName, park) {
+  const resort = RESORTS[resortName];
+  return resort?.walkable?.includes(park);
+}
+
+function isResortSkyliner(resortName) {
+  return RESORTS[resortName]?.skyliner === true;
+}
+
+function generateStubDays(a, pinnedDays = {}) {
+  const allocation = allocateParks(a, pinnedDays);
+  const sequence = sequenceParks(allocation, a, pinnedDays);
+  const visitCounts = {};
+  return sequence.map((park, i) => {
+    const count = (visitCounts[park] || 0) + 1;
+    visitCounts[park] = count;
+    const isRepeatVisit = count > 1;
+    const date = getDateForDay(a.dates.start, i);
+    return {
+      park,
+      date,
+      crowd: date ? estimateCrowd(date, park) : null,
+      rationale: generateRationale(park, i, sequence.length, a, date, isRepeatVisit),
+      flag: detectFlag(park, i, sequence.length, a, date),
+    };
+  });
+}
+
+function getDateForDay(startStr, dayIndex) {
+  if (!startStr) return null;
+  const d = new Date(startStr);
+  d.setDate(d.getDate() + dayIndex);
+  return d;
+}
+
+function estimateCrowd(date, park) {
+  if (park === 'Rest day' || park === 'Travel day' || park === 'Water park') return null;
+  const month = date.getMonth();
+  const dom = date.getDate();
+  const dow = date.getDay();
+  let base = 5;
+  if (month === 11 && dom >= 20) base = 10;
+  else if (month === 0 && dom <= 3) base = 9;
+  else if (month === 2 && dom >= 10 && dom <= 31) base = 8;
+  else if (month === 3 && dom <= 15) base = 8;
+  else if (month === 5 && dom >= 15) base = 8;
+  else if (month === 6) base = 8;
+  else if (month === 7 && dom <= 15) base = 7;
+  else if (month === 10 && dom >= 18 && dom <= 30) base = 8;
+  else if (month === 0 && dom >= 7 && dom <= 31) base = 3;
+  else if (month === 1 && dom <= 14) base = 3;
+  else if (month === 4 && dom <= 20) base = 4;
+  else if (month === 8) base = 4;
+  else if (month === 10 && dom <= 14) base = 4;
+  const dowAdjust = { 0: 1, 1: 0, 2: -1, 3: -1, 4: -1, 5: 0, 6: 2 }[dow];
+  let crowd = base + dowAdjust;
+  if (park === 'Magic Kingdom') {
+    if (dow === 6 || dow === 0) crowd += 1;
+  } else if (park === 'Hollywood Studios') {
+    if (dow >= 2 && dow <= 4) crowd += 1;
+  } else if (park === 'EPCOT') {
+    if ((month === 7 || month === 8 || month === 9 || month === 10) && (dow === 5 || dow === 6)) {
+      crowd += 2;
+    }
+  }
+  return Math.max(1, Math.min(10, crowd));
+}
+
+function allocateParks(a) {
+  const numDays = typeof a.days === 'number' ? a.days : 4;
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const allCoasters = a.intensity === 'all';
+  const calmOnly = a.intensity === 'calm';
+  const restPref = a.restDays || 'none';
+  const arrival = a.arrival || 'morning';
+  const waterParkDays = (a.waterParkInterest === 'yes' || a.waterParkInterest === 'maybe')
+    ? (a.waterParkCount || 0)
+    : 0;
+  const priority = ['Magic Kingdom', 'Hollywood Studios', 'EPCOT', 'Animal Kingdom'];
+  if (hasYoungKids) {
+    priority.splice(1, 0, priority.splice(priority.indexOf('Animal Kingdom'), 1)[0]);
+  }
+  if (calmOnly) {
+    priority.sort((x, y) => {
+      const order = { 'EPCOT': 0, 'Animal Kingdom': 1, 'Magic Kingdom': 2, 'Hollywood Studios': 3 };
+      return order[x] - order[y];
+    });
+  }
+  const day1NonPark = arrival === 'night';
+  let restDayCount = 0;
+  if (restPref === 'middle' && numDays >= 6) restDayCount = 1;
+  else if (restPref === 'spread' && numDays >= 5) restDayCount = Math.floor((numDays - 4) / 4) + 1;
+  else if (restPref === 'flexible' && numDays >= 7) restDayCount = Math.floor(numDays / 5);
+  const parkDayCount = numDays - restDayCount - waterParkDays - (day1NonPark ? 1 : 0);
+  let parkSequence = [];
+  if (parkDayCount <= 4) {
+    parkSequence = priority.slice(0, parkDayCount);
+  } else {
+    parkSequence = [...priority];
+    const remaining = parkDayCount - 4;
+    const repeatOrder = hasYoungKids
+      ? ['Magic Kingdom', 'EPCOT', 'Magic Kingdom', 'Hollywood Studios', 'Animal Kingdom', 'EPCOT']
+      : allCoasters
+        ? ['Hollywood Studios', 'Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Magic Kingdom', 'Animal Kingdom']
+        : ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Magic Kingdom', 'Animal Kingdom', 'EPCOT'];
+    for (let i = 0; i < remaining; i++) {
+      parkSequence.push(repeatOrder[i % repeatOrder.length]);
+    }
+  }
+  const allocation = [];
+  if (day1NonPark) allocation.push('Travel day');
+  let restDayPositions = [];
+  if (restPref === 'middle' && restDayCount === 1) {
+    // Land at ~60% through the trip — after fatigue builds, before final push
+    restDayPositions = [Math.floor(numDays * 0.6)];
+  } else if (restPref === 'spread') {
+    // First rest day at ~50%, then every 4-5 days
+    let pos = Math.floor(numDays * 0.5);
+    while (pos < numDays - 1) {
+      restDayPositions.push(pos);
+      pos += 5;
+    }
+  } else if (restPref === 'flexible') {
+    // Spread weighted toward the second half of the trip
+    if (restDayCount === 1) {
+      restDayPositions = [Math.floor(numDays * 0.6)];
+    } else if (restDayCount === 2) {
+      restDayPositions = [Math.floor(numDays * 0.45), Math.floor(numDays * 0.8)];
+    } else {
+      // 3+ rest days — even spacing but offset from start
+      const interval = Math.floor((numDays - 2) / restDayCount);
+      for (let i = 1; i <= restDayCount; i++) {
+        restDayPositions.push(1 + i * interval);
+      }
+    }
+  }
+  // Water park positioning — break up consecutive park days, ideally in second half
+  let waterParkPositions = [];
+  if (waterParkDays > 0) {
+    if (waterParkDays === 1) {
+      // Single water park day — land at ~70% through trip, but not on rest day
+      let target = Math.floor(numDays * 0.7);
+      while (restDayPositions.includes(target) && target > 1) target--;
+      waterParkPositions = [target];
+    } else if (waterParkDays === 2) {
+      // Two water park days — spread them out, neither adjacent to a rest day
+      let first = Math.floor(numDays * 0.4);
+      let second = Math.floor(numDays * 0.75);
+      while (restDayPositions.includes(first) && first > 1) first--;
+      while ((restDayPositions.includes(second) || second === first) && second > first + 1) second--;
+      waterParkPositions = [first, second];
+    }
+  }
+
+  let parkIdx = 0;
+  for (let dayIdx = allocation.length; dayIdx < numDays; dayIdx++) {
+    if (restDayPositions.includes(dayIdx)) {
+      allocation.push(a.restDayType === 'waterpark' ? 'Water park' : 'Rest day');
+    } else if (waterParkPositions.includes(dayIdx)) {
+      allocation.push('Water park');
+    } else {
+      allocation.push(parkSequence[parkIdx] || parkSequence[parkSequence.length - 1] || 'Magic Kingdom');
+      parkIdx++;
+    }
+  }
+  return allocation;
+}
+
+function sequenceParks(allocation, a, pinnedDays = {}) {
+  const numDays = allocation.length;
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const startDate = a.dates.start ? new Date(a.dates.start) : null;
+  if (startDate && numDays > 1) {
+    return crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDays);
+  }
+  return ruleBasedSequence(allocation, a, hasYoungKids);
+}
+
+function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDays = {}) {
+  const numDays = allocation.length;
+  const dates = Array.from({ length: numDays }, (_, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const sensitivity = {
+    'Magic Kingdom': 2, 'Hollywood Studios': 2, 'EPCOT': 1.2, 'Animal Kingdom': 1.5,
+    'Rest day': 0, 'Travel day': 0, 'Water park': 0,
+  };
+  const used = new Set();
+  const sequence = new Array(numDays).fill(null);
+
+  // FIRST: lock in all user-pinned days
+  Object.entries(pinnedDays).forEach(([idx, park]) => {
+    const i = parseInt(idx);
+    if (i < numDays) {
+      sequence[i] = park;
+      used.add(i);
+    }
+  });
+
+  // Travel day is always day 0 if it's in allocation and not overridden
+  if (allocation.includes('Travel day') && !sequence[0]) {
+    sequence[0] = 'Travel day';
+    used.add(0);
+  }
+
+  // Now figure out what still needs to be placed
+  // Take original allocation, remove what's already been pinned (matching by count)
+  const pinnedCounts = {};
+  Object.values(pinnedDays).forEach(p => { pinnedCounts[p] = (pinnedCounts[p] || 0) + 1; });
+  if (allocation.includes('Travel day') && sequence[0] === 'Travel day' && !pinnedDays[0]) {
+    pinnedCounts['Travel day'] = (pinnedCounts['Travel day'] || 0) + 1;
+  }
+
+  const remainingAllocation = [];
+  const allocCounts = {};
+  allocation.forEach(p => { allocCounts[p] = (allocCounts[p] || 0) + 1; });
+  Object.entries(allocCounts).forEach(([park, count]) => {
+    const alreadyPlaced = pinnedCounts[park] || 0;
+    const toPlace = Math.max(0, count - alreadyPlaced);
+    for (let i = 0; i < toPlace; i++) remainingAllocation.push(park);
+  });
+
+  // Also handle case: user pinned a park that wasn't in original allocation (e.g. extra Magic Kingdom day)
+  Object.entries(pinnedCounts).forEach(([park, count]) => {
+    const inAlloc = allocCounts[park] || 0;
+    if (count > inAlloc) {
+      // User added park days beyond what we'd planned — need to drop something else
+      // Drop the least-sensitive park from remaining
+      const dropCandidates = remainingAllocation
+        .map((p, idx) => ({ p, idx, s: sensitivity[p] || 0 }))
+        .sort((x, y) => x.s - y.s);
+      const excess = count - inAlloc;
+      for (let i = 0; i < excess && dropCandidates.length > 0; i++) {
+        remainingAllocation.splice(dropCandidates[i].idx, 1);
+      }
+    }
+  });
+
+  const uniqueParks = [...new Set(remainingAllocation)];
+  uniqueParks.sort((x, y) => sensitivity[y] - sensitivity[x]);
+  for (const park of uniqueParks) {
+    const occurrences = remainingAllocation.filter(p => p === park).length;
+    const candidates = dates.map((d, i) => ({
+      idx: i,
+      score: (estimateCrowd(d, park) || 0) * sensitivity[park] + softPenalty(park, i, numDays, a, hasYoungKids) + eventPenalty(park, d),
+    }))
+    .filter(c => !used.has(c.idx))
+    .sort((x, y) => x.score - y.score);
+    for (let n = 0; n < occurrences && n < candidates.length; n++) {
+      sequence[candidates[n].idx] = park;
+      used.add(candidates[n].idx);
+    }
+  }
+  for (let i = 0; i < numDays; i++) {
+    if (!sequence[i]) sequence[i] = allocation[i] || 'Magic Kingdom';
+  }
+  // Don't shuffle pinned days
+  for (let i = 1; i < sequence.length; i++) {
+    if (pinnedDays[i] !== undefined || pinnedDays[i - 1] !== undefined) continue;
+    if (sequence[i] === sequence[i - 1] && sequence[i] !== 'Travel day') {
+      for (let j = i + 1; j < sequence.length; j++) {
+        if (pinnedDays[j] !== undefined) continue;
+        if (sequence[j] !== sequence[i] && sequence[j] !== 'Travel day' && (j === sequence.length - 1 || sequence[j + 1] !== sequence[i])) {
+          [sequence[i], sequence[j]] = [sequence[j], sequence[i]];
+          break;
+        }
+      }
+    }
+  }
+  return sequence;
+}
+
+function eventPenalty(park, date) {
+  if (park !== 'Magic Kingdom') return 0;
+  const month = date.getMonth();
+  const dow = date.getDay();
+  if ((month >= 7 && month <= 9) && [0, 1, 3, 4, 5].includes(dow)) return 4;
+  if (month === 10 && [0, 1, 2, 4, 5].includes(dow)) return 4;
+  return 0;
+}
+
+function softPenalty(park, dayIdx, numDays, a, hasYoungKids) {
+  let penalty = 0;
+  const isArrival = dayIdx === 0;
+  const isDeparture = dayIdx === numDays - 1 && numDays > 1;
+  if (park === 'Travel day') {
+    if (!isArrival) penalty += 100;
+    return penalty;
+  }
+  if (park === 'Rest day' || park === 'Water park') {
+    if (isArrival || isDeparture) penalty += 10;
+    if (dayIdx === 1) penalty += 5;
+    return penalty;
+  }
+  if (isArrival && (park === 'Magic Kingdom' || park === 'Hollywood Studios')) {
+    if (a.experience !== 'returning' || hasYoungKids) penalty += 3;
+  }
+  if (isDeparture && (park === 'Magic Kingdom' || park === 'Hollywood Studios')) penalty += 2;
+  if (park === 'Magic Kingdom' && dayIdx === 1) penalty -= 1.5;
+  if (hasYoungKids && park === 'Magic Kingdom' && dayIdx === 1) penalty -= 0.5;
+  return penalty;
+}
+
+function ruleBasedSequence(allocation, a, hasYoungKids) {
+  let sequence = [...allocation];
+  if (a.experience !== 'returning' || hasYoungKids) {
+    if (sequence[0] === 'Magic Kingdom' || sequence[0] === 'Hollywood Studios') {
+      const swapIdx = sequence.findIndex(p => p === 'Animal Kingdom' || p === 'EPCOT');
+      if (swapIdx > 0) [sequence[0], sequence[swapIdx]] = [sequence[swapIdx], sequence[0]];
+    }
+  }
+  if (sequence.length > 2) {
+    const last = sequence.length - 1;
+    if (sequence[last] === 'Hollywood Studios' || sequence[last] === 'Magic Kingdom') {
+      const swapIdx = sequence.findIndex((p, i) => i < last && (p === 'Animal Kingdom' || p === 'EPCOT'));
+      if (swapIdx >= 0) [sequence[last], sequence[swapIdx]] = [sequence[swapIdx], sequence[last]];
+    }
+  }
+  if (hasYoungKids && sequence.length >= 3) {
+    const mkIdx = sequence.indexOf('Magic Kingdom');
+    if (mkIdx > 1) {
+      const mk = sequence.splice(mkIdx, 1)[0];
+      sequence.splice(1, 0, mk);
+    }
+  }
+  for (let i = 1; i < sequence.length; i++) {
+    if (sequence[i] === sequence[i - 1]) {
+      for (let j = i + 1; j < sequence.length; j++) {
+        if (sequence[j] !== sequence[i] && sequence[j] !== sequence[i - 1]) {
+          [sequence[i], sequence[j]] = [sequence[j], sequence[i]];
+          break;
+        }
+      }
+    }
+  }
+  return sequence;
+}
+
+function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit) {
+  const isArrival = dayIndex === 0;
+  const isDeparture = dayIndex === totalDays - 1 && totalDays > 1;
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const allCoasters = a.intensity === 'all';
+  const splitIntensity = a.intensity === 'split';
+  const calmOnly = a.intensity === 'calm';
+  const onProperty = a.property === 'on';
+  const ropeDrop = a.rhythm === 'rope';
+  const splitRhythm = a.rhythm === 'split';
+  const lateStart = a.rhythm === 'late';
+  const earlyEvenings = a.evenings === 'early';
+  const lateEvenings = a.evenings === 'late';
+  const arrival = a.arrival || 'morning';
+  const restDayType = a.restDayType || 'full';
+  const crowd = date ? estimateCrowd(date, park) : null;
+  const dayName = date ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][date.getDay()] : null;
+  const wantedRides = a.rides || [];
+  const resort = onProperty ? a.resort : null;
+
+  if (park === 'Travel day') {
+    return {
+      headline: "Arrival day. You're getting in late — no parks tonight.",
+      morning: "Travel.",
+      afternoon: "Land, get to the resort, check in. If you're early enough, drop bags and explore the resort grounds.",
+      evening: onProperty ? "Resort dinner — somewhere relaxed near where you're staying. Early to bed; the real trip starts tomorrow." : "Dinner near your hotel. Early night.",
+    };
+  }
+  if (park === 'Water park') {
+    const openPref = a.waterParkOpen;
+    let parkName = 'water park';
+    let openNote = '';
+    if (openPref === 'typhoon') { parkName = 'Typhoon Lagoon'; }
+    else if (openPref === 'blizzard') { parkName = 'Blizzard Beach'; }
+    else if (openPref === 'both') { parkName = 'water park (your pick — both open)'; }
+    else if (openPref === 'unsure') {
+      parkName = 'water park';
+      openNote = " Check Disney's calendar to confirm which one (Typhoon Lagoon or Blizzard Beach) is open for your dates.";
+    }
+    return {
+      headline: `${parkName.charAt(0).toUpperCase() + parkName.slice(1)} day. Different rhythm, different rules.${openNote}`,
+      morning: "Arrive around opening — slides queue up faster than rides do, so the early-morning advantage is real. Wear swimwear under your clothes.",
+      afternoon: "Stay through the heat. The water keeps everyone cool and queues are shortest mid-afternoon. Cabana hire (~$300+) is the splurge that makes this a different experience.",
+      evening: "Out by 4-5pm — water park days are tiring in a different way and you'll want a quieter evening.",
+    };
+  }
+  if (park === 'Rest day') {
+    if (restDayType === 'morning') {
+      return {
+        headline: "Rest day — morning off, evening park visit.",
+        morning: "Sleep in. Pool morning.",
+        afternoon: "Late lunch at the resort. Get ready for an evening park trip.",
+        evening: "Evening at MK or HS — fireworks viewing, a few rides on the way out.",
+      };
+    }
+    if (restDayType === 'evening') {
+      return {
+        headline: "Half-day park — morning only, then rest.",
+        morning: "Rope drop a park near your resort. Out by 1pm.",
+        afternoon: "Pool afternoon.",
+        evening: hasYoungKids ? "Early dinner at the resort." : "Resort dinner or a quiet off-property meal.",
+      };
+    }
+    return {
+      headline: "Rest day. The smartest day of the trip.",
+      morning: "Sleep in. Pool morning. The kids will thank you and the next park day will go better.",
+      afternoon: "Disney Springs if you want to be out — free entry, decent food. Otherwise stay at the resort.",
+      evening: hasYoungKids ? "Early dinner, early night. Reset for the next park day." : "Resort restaurant or off-property for something different.",
+    };
+  }
+
+  const useLLToday = a.lightning === 'always' ? true : a.lightning === 'none' ? false : shouldBuyLL({ park, crowd: crowd || 5 }, a);
+  const isDay1ShortVisit = isArrival && (arrival === 'midday' || arrival === 'evening');
+
+  const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
+  const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport });
+  const afternoon = buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
+  const evening = buildEvening({ park, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort });
+
+  return { headline, morning, afternoon, evening };
+}
+
+function buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival }) {
+  if (isDay1ShortVisit) {
+    if (arrival === 'evening') return `Arrival day. You're getting in late afternoon — ${park} is the right shout for a relaxed evening visit.`;
+    return `Arrival day. You're getting in midday — half-day at ${park}, taking it easy.`;
+  }
+  if (isArrival) {
+    if (park === 'Animal Kingdom') return "An easy first day. Animal Kingdom closes earlier than the others, and a half-day here is the gentlest landing.";
+    if (park === 'EPCOT') return "EPCOT works as an arrival day in a way the others don't — World Showcase doesn't demand the early start, you can leave whenever you've had enough.";
+    return "Arrival day. We've kept it light — get your bearings, plan the real day tomorrow.";
+  }
+  if (isDeparture) return "Last day. Out by mid-afternoon to make the flight, so we've put a park here that doesn't punish a half-day.";
+
+  const crowdLead = crowd !== null && dayName ? (
+    crowd <= 3 ? `${dayName} is the quietest day in your window for ${park} — that's why it lands here. ` :
+    crowd <= 5 ? `${dayName} is the best ${park} day we have. ` :
+    crowd >= 8 ? `${dayName} won't be quiet, but it's the best slot for ${park} given the rest of your week. ` : ''
+  ) : '';
+
+  if (isRepeatVisit) {
+    if (park === 'Magic Kingdom') return crowdLead + "Second Magic Kingdom day — and there's still plenty to do. We've routed this one differently to the first.";
+    if (park === 'EPCOT') return crowdLead + "Second EPCOT day. The first wasn't enough — this one's for everything you didn't get to.";
+    if (park === 'Hollywood Studios') return crowdLead + "Second Hollywood Studios day — usually because the first was too short to do Galaxy's Edge properly.";
+    return crowdLead + `Second ${park} day. Whatever you missed last time, this is your shot.`;
+  }
+  if (park === 'Magic Kingdom') {
+    if (hasYoungKids) return crowdLead + "Magic Kingdom is the deepest park you'll visit. Front-load it while everyone's fresh.";
+    if (allCoasters) return crowdLead + "The headliner day. Tron, Space Mountain, Big Thunder, Seven Dwarfs — all worth queueing for.";
+    return crowdLead + "The iconic day. The castle, the parade, the fireworks.";
+  }
+  if (park === 'EPCOT') return crowdLead + "EPCOT rewards a longer, slower day. Future World rides in the morning, then drift into World Showcase.";
+  if (park === 'Hollywood Studios') {
+    if (splitIntensity) return crowdLead + "The most ride-dense park in the resort, and the one Rider Swap was made for.";
+    if (calmOnly) return crowdLead + "Galaxy's Edge, Toy Story Land, and Mickey & Minnie's Runaway Railway carry it for a calmer party.";
+    return crowdLead + "Hollywood Studios is the most ride-dense park in the resort and the most punishing if you don't plan.";
+  }
+  if (park === 'Animal Kingdom') return crowdLead + "Animal Kingdom closes earlier and feels different — it's a park designed to be wandered.";
+  return crowdLead;
+}
+
+function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport }) {
+  if (isDay1ShortVisit) {
+    if (arrival === 'evening') return "Travel and check in. Get to the resort, drop bags, eat early.";
+    if (arrival === 'midday') return "Travel. Land, get to the resort, drop bags as fast as you can.";
+  }
+  if (isArrival) return "Get to the park around lunch. Don't try to do too much.";
+  const ropeDropTargets = getRopeDropTargets(park, wantedRides);
+  const llTargets = getLLTargets(park, wantedRides);
+  if (lateStart) return `Late start today — arrive around 11am. Skip rope drop and use Lightning Lane for ${llTargets.slice(0,2).join(' and ') || 'the headliners'}.`;
+  let transportLine = '';
+  if (resort && onProperty) {
+    const transport = getResortTransport(resort, park);
+    const walkable = isResortWalkable(resort, park);
+    if (walkable) transportLine = `You can walk to ${park} from ${resort} — leave by 7:45am to beat the bus crowd.`;
+    else if (transport === 'monorail-walk' || transport === 'monorail-bus') transportLine = `Monorail to ${park} from ${resort} — first monorail runs around 7am.`;
+    else if (transport === 'skyliner') transportLine = `Skyliner from ${resort} starts running at 7:30am — be in line at 7:15am.`;
+    else if (transport === 'boat') transportLine = `Boat from ${resort} to ${park} — first boat runs around 7:15am.`;
+    else transportLine = `Bus to ${park} from ${resort} — be at the bus stop by 7am.`;
+  } else if (!onProperty && offPropertyTransport) {
+    if (offPropertyTransport === 'rental') transportLine = `Drive to ${park} — leave 75 minutes before park opening.`;
+    else if (offPropertyTransport === 'rideshare') transportLine = `Book the Uber 45 minutes before park opening.`;
+    else if (offPropertyTransport === 'mears') transportLine = `Mears Connect drops at the parks 30-45 minutes before opening.`;
+    else if (offPropertyTransport === 'walk') transportLine = `Walk or hotel shuttle to ${park} — leave 60 minutes before opening.`;
+  }
+  let prose = transportLine ? `${transportLine} ` : `Be at the gate ${onProperty ? '30' : '45'} minutes before opening. `;
+  prose += `${onProperty ? 'Use Early Theme Park Entry — ' : ''}rope drop targets: ${ropeDropTargets.join(', then ')}.`;
+  if (useLLToday && llTargets.length) prose += ` Lightning Lane priority: ${llTargets.slice(0,2).join(' and ')}.`;
+  else if (!useLLToday) prose += ` Without Lightning Lane the first 90 minutes are everything.`;
+  return prose;
+}
+
+function buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit }) {
+  if (isDay1ShortVisit) {
+    if (arrival === 'evening') return "Resort check-in. Maybe pool for an hour if there's time.";
+    if (arrival === 'midday') return `Get to ${park} by 3pm. Lightning Lane any open headliners.`;
+  }
+  if (isDeparture) return "Hit the things you missed, then go.";
+  if (splitRhythm) return "Pool break from 1 to 4pm. Park is at its hottest and busiest now.";
+  if (park === 'Magic Kingdom') return useLLToday ? "Use the rest of your Lightning Lanes mid-afternoon. Sit-down lunch around 2pm." : "Hit the lower-demand rides — Mansion, Pirates, the People Mover. Sit-down lunch around 2pm.";
+  if (park === 'EPCOT') return "Afternoon is World Showcase time. Walk it counter-clockwise from Mexico.";
+  if (park === 'Hollywood Studios') return useLLToday ? "Galaxy's Edge in the afternoon. Use remaining Lightning Lanes on Tower of Terror or Rock 'n' Roller Coaster." : "Galaxy's Edge in the afternoon. Tower of Terror queues actually drop after lunch.";
+  if (park === 'Animal Kingdom') return "Animal trails in the afternoon — Maharajah Jungle Trek and Gorilla Falls.";
+  return "";
+}
+
+function buildEvening({ park, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort }) {
+  if (isDay1ShortVisit) {
+    if (arrival === 'evening') return `Evening at ${park}. Lightning Lane any one or two headliners if available.`;
+    if (arrival === 'midday') return "Stay through to closing if you can.";
+  }
+  if (isArrival) return "Dinner at the resort or somewhere off-park. Early to bed.";
+  if (isDeparture) return "";
+  if (isRepeatVisit && (hopper === 'yes' || hopper === 'unsure')) {
+    const hopTarget = pickEveningHopTarget(park, resort);
+    if (hopTarget) return `Park hopper move: from 5pm, hop to ${hopTarget} for the evening — ${getEveningHopReason(hopTarget)}.`;
+  }
+  if (earlyEvenings) {
+    if (park === 'Animal Kingdom') return "Park closes earlier here anyway — you're out by 7 or 8.";
+    return "You're heading out before the closing show. Focus on rides you want to repeat — queues drop in the final 30 minutes.";
+  }
+  if (park === 'Magic Kingdom') return lateEvenings || ropeDrop ? "Stay for Happily Ever After fireworks — book a viewing spot 60-90 minutes early on the hub grass." : "Watch fireworks if you can.";
+  if (park === 'Hollywood Studios') return lateEvenings ? "Fantasmic at 8pm or 9pm — get there 45 minutes early." : "Ride Rise of the Resistance or Tower of Terror in the last hour.";
+  if (park === 'EPCOT') return lateEvenings ? "Eat your way around World Showcase. Stay for the lagoon show." : "World Showcase is the dinner.";
+  if (park === 'Animal Kingdom') return "Park closes early — by the time you'd think about evenings here, you're done.";
+  return "";
+}
+
+function pickEveningHopTarget(currentPark, resort) {
+  if (resort && isResortSkyliner(resort)) {
+    if (currentPark !== 'EPCOT') return 'EPCOT';
+    return 'Hollywood Studios';
+  }
+  if (resort && (resort === 'BoardWalk' || resort === 'Beach/Yacht Club')) {
+    if (currentPark !== 'EPCOT') return 'EPCOT';
+    return 'Hollywood Studios';
+  }
+  if (resort && (resort === 'Contemporary' || resort === 'Polynesian' || resort === 'Grand Floridian')) {
+    if (currentPark !== 'Magic Kingdom') return 'Magic Kingdom';
+  }
+  if (currentPark !== 'EPCOT') return 'EPCOT';
+  return 'Magic Kingdom';
+}
+
+function getEveningHopReason(park) {
+  const reasons = {
+    'EPCOT': 'World Showcase, food, lagoon show at 9pm',
+    'Magic Kingdom': 'fireworks and the iconic evening atmosphere',
+    'Hollywood Studios': "Fantasmic and Galaxy's Edge after dark",
+  };
+  return reasons[park] || '';
+}
+
+function getRopeDropTargets(park, wantedRides) {
+  const allTargets = {
+    'Magic Kingdom': [
+      { id: 'sevendwarfs', name: 'Seven Dwarfs Mine Train' },
+      { id: 'tron', name: 'Tron Lightcycle' },
+      { id: 'peterpan', name: "Peter Pan's Flight" },
+      { id: 'spacemountain', name: 'Space Mountain' },
+    ],
+    'EPCOT': [
+      { id: 'guardians', name: 'Guardians of the Galaxy' },
+      { id: 'remy', name: "Remy's Ratatouille" },
+      { id: 'frozen', name: 'Frozen Ever After' },
+      { id: 'testtrack', name: 'Test Track' },
+    ],
+    'Hollywood Studios': [
+      { id: 'slinky', name: 'Slinky Dog Dash' },
+      { id: 'rise', name: 'Rise of the Resistance' },
+      { id: 'mmrr', name: "Mickey & Minnie's Runaway Railway" },
+    ],
+    'Animal Kingdom': [
+      { id: 'fop', name: 'Flight of Passage' },
+      { id: 'navi', name: "Na'vi River Journey" },
+      { id: 'everest', name: 'Expedition Everest' },
+    ],
+  };
+  const targets = allTargets[park] || [];
+  const wanted = targets.filter(t => wantedRides.includes(t.id));
+  if (wanted.length > 0) return wanted.slice(0, 3).map(t => t.name);
+  return targets.slice(0, 2).map(t => t.name);
+}
+
+function getLLTargets(park, wantedRides) {
+  const priorities = {
+    'Magic Kingdom': [
+      { id: 'sevendwarfs', name: 'Seven Dwarfs (Single Pass)' },
+      { id: 'tron', name: 'Tron (Single Pass)' },
+      { id: 'peterpan', name: "Peter Pan's Flight" },
+      { id: 'bigthunder', name: 'Big Thunder Mountain' },
+      { id: 'spacemountain', name: 'Space Mountain' },
+    ],
+    'EPCOT': [
+      { id: 'guardians', name: 'Guardians (Single Pass)' },
+      { id: 'testtrack', name: 'Test Track' },
+      { id: 'frozen', name: 'Frozen Ever After' },
+      { id: 'remy', name: "Remy's Ratatouille" },
+    ],
+    'Hollywood Studios': [
+      { id: 'rise', name: 'Rise of the Resistance (Single Pass)' },
+      { id: 'slinky', name: 'Slinky Dog Dash' },
+      { id: 'tot', name: 'Tower of Terror' },
+      { id: 'mmrr', name: "Mickey & Minnie's Runaway Railway" },
+    ],
+    'Animal Kingdom': [
+      { id: 'fop', name: 'Flight of Passage (Single Pass)' },
+      { id: 'navi', name: "Na'vi River Journey" },
+      { id: 'safari', name: 'Kilimanjaro Safaris' },
+      { id: 'everest', name: 'Expedition Everest' },
+    ],
+  };
+  const all = priorities[park] || [];
+  const wanted = all.filter(p => wantedRides.includes(p.id));
+  if (wanted.length > 0) return wanted.map(p => p.name);
+  return all.slice(0, 3).map(p => p.name);
+}
+
+function detectFlag(park, dayIndex, totalDays, a, date) {
+  if (!date) return null;
+  const month = date.getMonth();
+  const dow = date.getDay();
+  if (park === 'Magic Kingdom' && (month === 7 || month === 8 || month === 9)) {
+    if ([0, 1, 3, 4, 5].includes(dow)) return "Likely Halloween Party night — verify and reshape this day";
+  }
+  if (park === 'Magic Kingdom' && month === 10 && [0, 1, 2, 4, 5].includes(dow)) {
+    return "Likely Christmas Party night — verify and reshape this day";
+  }
+  if (park === 'EPCOT') {
+    if (month >= 0 && month <= 1) return 'Festival of the Arts is on';
+    if (month >= 2 && month <= 4) return 'Flower & Garden Festival is on';
+    if (month >= 7 && month <= 10) return 'Food & Wine Festival is on';
+  }
+  return null;
+}
+
+function generateHeadline(a) {
+  const adults = a.party.adults;
+  const teens = a.party.teens;
+  const kids = a.party.kids;
+  const under3 = a.party.under3;
+  const total = adults + teens + kids + under3;
+  const numDays = typeof a.days === 'number' ? a.days : 4;
+  let party;
+  if (total === 1) party = 'a solo trip';
+  else if (total === 2 && adults === 2) party = 'two adults';
+  else if (kids > 0 && adults > 0) {
+    if (kids === 1 && adults === 2) party = 'a family of three';
+    else if (kids === 2 && adults === 2) party = 'a family of four';
+    else if (kids === 3 && adults === 2) party = 'a family of five';
+    else party = `a family of ${total}`;
+  } else if (teens > 0 && adults > 0) party = `a party of ${total} with teenagers`;
+  else party = `a party of ${total}`;
+  return `A ${numDays}-day plan for ${party}.`;
+}
+
+function generateSummary(a, days) {
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const numDays = typeof a.days === 'number' ? a.days : 4;
+  const noLightning = a.lightning === 'none';
+  const onProperty = a.property === 'on';
+  const allCoasters = a.intensity === 'all';
+  const splitIntensity = a.intensity === 'split';
+  const crowdLevels = (days || []).map(d => d.crowd).filter(c => c !== null && c !== undefined);
+  const avgCrowd = crowdLevels.length ? crowdLevels.reduce((a,b) => a+b, 0) / crowdLevels.length : null;
+  const peakDay = days && days.length ? days.reduce((max, d) => (d.crowd || 0) > (max.crowd || 0) ? d : max, days[0]) : null;
+  let lead;
+  if (avgCrowd === null) lead = `A ${numDays}-day plan built around your party.`;
+  else if (avgCrowd <= 4) lead = `You've picked a quiet week — that changes the maths. Lightning Lane matters less, rope drop matters less, and you can afford to be lazy in the afternoons.`;
+  else if (avgCrowd >= 7) lead = `You're going during a busy week. Strategy matters more than usual. Every recommendation below assumes you're committed to early starts.`;
+  else lead = `Your week is a moderate-crowd window — the kind where good planning genuinely separates a great trip from a mediocre one.`;
+  let structure;
+  if (hasYoungKids && numDays >= 4) structure = `We've front-loaded Magic Kingdom while energy is highest, paired the bigger parks with quieter days, and kept the early and late days light.`;
+  else if (allCoasters) structure = `Hollywood Studios and Magic Kingdom carry the trip — sequenced onto the lowest-crowd days, with EPCOT and Animal Kingdom absorbing weekend hits.`;
+  else if (splitIntensity) structure = `The plan assumes Rider Swap will be a regular feature on the thrill-heavy days.`;
+  else structure = `Each park is matched to its quietest day in your window.`;
+  let brace = '';
+  if (peakDay && peakDay.crowd >= 8) {
+    const peakDate = peakDay.date ? peakDay.date.toLocaleDateString('en-GB', { weekday: 'long' }) : null;
+    brace = `Your toughest day is ${peakDate ? peakDate + ' at ' : ''}${peakDay.park} — be at the gate before opening.`;
+  } else if (noLightning && (allCoasters || splitIntensity)) brace = `You're skipping the Lightning Lane upcharge — but it makes rope drop non-negotiable on the headliner days.`;
+  else if (onProperty) brace = `Your on-property stay gives you Early Theme Park Entry — use it every day you're not deliberately taking it slow.`;
+  return [lead, structure, brace].filter(Boolean).join(' ');
+}
+
+function generateActions(a, days) {
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const onProperty = a.property === 'on';
+  const numDays = typeof a.days === 'number' ? a.days : 4;
+  const actions = [];
+  actions.push({ category: 'Tickets', what: 'Buy park tickets via Undercover Tourist', when: 'Anytime — saves 3-5% versus Disney direct' });
+  if (a.hopper === 'yes') actions.push({ category: 'Tickets', what: 'Add Park Hopper to your tickets', when: 'Adds ~$80/person but lets you switch parks after 2pm' });
+  else if (a.hopper === 'unsure') {
+    const recommendHopper = numDays <= 4 || a.evenings === 'late' || onProperty;
+    actions.push({
+      category: 'Tickets',
+      what: recommendHopper ? 'Recommend Park Hopper — worth ~$80/person' : 'Skip Park Hopper',
+      when: recommendHopper ? 'Worth it for evening flexibility' : 'Stick with single-park tickets',
+    });
+  }
+  if (a.dining === 'full' || a.dining === 'mix' || a.dining === 'unsure') {
+    actions.push({ category: 'Dining', what: 'Book sit-down restaurants 60 days out at 7am ET', when: 'The most popular tables go in the first minute' });
+    if (hasYoungKids) actions.push({ category: 'Dining', what: "Skip Chef Mickey's — overpriced, mediocre, kids see Mickey for 90 seconds", when: 'Better character meals exist' });
+  }
+  if (a.lightning === 'always') {
+    actions.push({ category: 'Lightning Lane', what: 'Multi Pass selections every park day', when: onProperty ? '7 days before arrival, 7am ET' : '3 days before each park day' });
+  } else if (a.lightning === 'smart' || a.lightning === 'unsure') {
+    const llDays = days ? days.filter(d => shouldBuyLL(d, a)) : [];
+    if (llDays.length > 0) {
+      actions.push({ category: 'Lightning Lane', what: `Multi Pass on these days only: ${llDays.map(d => d.park).join(', ')}`, when: onProperty ? '7 days before arrival, 7am ET' : '3 days before' });
+    }
+  }
+  const waterParkDays = days ? days.filter(d => d.park === 'Water park').length : 0;
+  if (waterParkDays > 0) {
+    if (a.waterParkOpen === 'unsure') {
+      actions.push({
+        category: 'Water Park',
+        what: "Check Disney's calendar — confirm whether Typhoon Lagoon or Blizzard Beach is open during your dates",
+        when: 'Usually only one is open at a time — refurbishment schedules rotate',
+      });
+    }
+    actions.push({
+      category: 'Water Park',
+      what: waterParkDays > 1
+        ? 'Add Water Park & Sports option to your ticket — cheaper than separate tickets for two water park days'
+        : 'Buy a single water park ticket separately (~$70/person) — or bundle if buying a multi-day Disney pass',
+      when: 'Buy with main park tickets via Undercover Tourist for the discount',
+    });
+  }
+  if (onProperty) actions.push({ category: 'Resort', what: 'Confirm Early Theme Park Entry is enabled', when: 'Should be automatic — worth a 30-second check' });
+  actions.push({ category: 'App', what: 'Set up My Disney Experience and link tickets', when: "As soon as everything's booked" });
+  return actions;
+}
+
+function shouldBuyLL(day, a) {
+  const crowd = day.crowd || 5;
+  const allCoasters = a.intensity === 'all';
+  const splitIntensity = a.intensity === 'split';
+  if (day.park === 'Hollywood Studios' && crowd >= 5) return true;
+  if (day.park === 'Magic Kingdom' && crowd >= 6) return true;
+  if (day.park === 'Magic Kingdom' && (allCoasters || splitIntensity) && crowd >= 5) return true;
+  if ((day.park === 'EPCOT' || day.park === 'Animal Kingdom') && crowd >= 8) return true;
+  return false;
+}
