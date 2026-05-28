@@ -935,6 +935,23 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
+      <div className="border-t border-stone-300 pt-12 mb-12">
+        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Things I wished I'd known
+        </div>
+        <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
+          The non-obvious things that make the difference — the stuff you only learn after you've been.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+          {generateTips(answers).map((t, i) => (
+            <div key={i}>
+              <div className="text-stone-900 mb-1.5 text-base leading-snug" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{t.title}</div>
+              <div className="text-sm text-stone-600 leading-relaxed" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{t.body}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <button
         onClick={onReset}
         className="flex items-center gap-2 text-sm tracking-wider uppercase text-stone-600 hover:text-stone-900 transition-colors"
@@ -1739,8 +1756,16 @@ function generateActions(a, days) {
     actions.push({ category: 'Lightning Lane', what: 'Multi Pass selections every park day', when: onProperty ? '7 days before arrival, 7am ET' : '3 days before each park day' });
   } else if (a.lightning === 'smart' || a.lightning === 'unsure') {
     const llDays = days ? days.filter(d => shouldBuyLL(d, a)) : [];
+    const parkDays = days ? days.filter(d => ['Magic Kingdom','EPCOT','Hollywood Studios','Animal Kingdom'].includes(d.park)) : [];
     if (llDays.length > 0) {
-      actions.push({ category: 'Lightning Lane', what: `Multi Pass on these days only: ${llDays.map(d => d.park).join(', ')}`, when: onProperty ? '7 days before arrival, 7am ET' : '3 days before' });
+      const dayLabels = llDays.map(d => d.date ? `${d.park} (${d.date.toLocaleDateString('en-GB',{weekday:'short'})})` : d.park);
+      actions.push({ category: 'Lightning Lane', what: `Multi Pass on these days: ${dayLabels.join(', ')}`, when: onProperty ? '7 days before arrival, 7am ET' : '3 days before each, 7am ET' });
+      if (llDays.length < parkDays.length) {
+        actions.push({ category: 'Lightning Lane', what: 'Skip Multi Pass on the other park days — standby is fine there', when: 'Save the money for Single Pass on a headliner or for dining' });
+      }
+      actions.push({ category: 'Lightning Lane', what: 'Buy Single Pass à la carte for the top headliners (Tron, Rise of the Resistance, Flight of Passage, Seven Dwarfs) on the days you visit those parks', when: 'Morning of — 7am for resort guests, park open for off-property' });
+    } else {
+      actions.push({ category: 'Lightning Lane', what: parkDays.length > 0 ? "You're in a quiet enough window that standby works — skip Multi Pass and save the money" : 'Add your dates to get a per-day Multi Pass recommendation', when: parkDays.length > 0 ? 'Rope drop discipline does the job at these crowd levels' : 'Crowd levels drive this call' });
     }
   }
   const waterParkDays = days ? days.filter(d => d.park === 'Water park').length : 0;
@@ -1765,13 +1790,38 @@ function generateActions(a, days) {
   return actions;
 }
 
+function generateTips(a) {
+  const onProperty = a.property === 'on';
+  const tips = [];
+
+  // The genuine insider tier — counterintuitive, specific, money/time savers. All universal.
+  tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot, you can keep changing it. Book the easiest available ride just to start the clock, then modify it to something better as slots open up through the day. Refresh the app obsessively — cancellations drop in constantly and that's how people snag Seven Dwarfs at 2pm." });
+  tips.push({ title: "Book your first Lightning Lane the second you tap into ride one", body: "The booking window opens the moment you enter the park. Don't wait — open the app as you walk onto your first rope-drop ride and grab your first Multi Pass for later. Every hour you delay, the good return times disappear." });
+  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table reservation eats the exact 90 minutes when Lightning Lane and rope-drop momentum matter most. Book meals for 11am or after 4pm — the prime ride hours stay free, and the restaurants are quieter anyway." });
+  tips.push({ title: 'Mobile Order before you even feel hungry', body: "Order on the app an hour ahead while you're in a queue or on a ride, pick a collection window, and walk straight past the lunchtime scrum. The food courts at noon are the worst queue in the park and the easiest one to skip entirely." });
+  tips.push({ title: 'The nighttime show is the best time to ride', body: "When the fireworks start, wait times on the big rides collapse — everyone's watching the sky. See the show properly once, then on other nights ride during it. You'll walk onto things that had two-hour queues at lunch." });
+  tips.push({ title: 'Your on-ride photos are already in the app', body: "You don't need to buy them at the kiosk. On-ride and character photos sync to My Disney Experience automatically — and if your ticket includes Memory Maker or you're a resort guest, downloading them is free. Always check the app before paying a kiosk." });
+  tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes. The crowds flee and the queues empty, so a £1 poncho from home (not the £12 one at the gate) turns a downpour into the quietest, fastest hour of your day." });
+  tips.push({ title: 'Single rider lines exist on rides nobody expects', body: "Test Track, Rock 'n' Roller Coaster, Expedition Everest and a few others run a single rider queue that's a fraction of standby. Even as a family you can use it one at a time on the ride you most want to repeat — it's the closest thing to a free Lightning Lane." });
+
+  if (onProperty) {
+    tips.push({ title: 'Spend Early Entry on the hardest ride, not the easy ones', body: "That 30-minute head start is enough to walk onto a ride that'll hit a two-hour wait by noon. Don't fritter it on low-demand rides you could do anytime — aim it straight at the single hardest-to-get ride of the day." });
+  } else {
+    tips.push({ title: "One parking payment covers every park, all day", body: "Your parking receipt is valid across all four parks — so if you switch parks, don't pay twice. And Disney Springs parking is free, which makes it a cheaper spot to grab a rideshare from than the park lots." });
+  }
+
+  return tips;
+}
+
 function shouldBuyLL(day, a) {
   const crowd = day.crowd || 5;
   const allCoasters = a.intensity === 'all';
   const splitIntensity = a.intensity === 'split';
+  // Hollywood Studios — hardest park to do without it; worth it from moderate crowds up
   if (day.park === 'Hollywood Studios' && crowd >= 5) return true;
-  if (day.park === 'Magic Kingdom' && crowd >= 6) return true;
-  if (day.park === 'Magic Kingdom' && (allCoasters || splitIntensity) && crowd >= 5) return true;
-  if ((day.park === 'EPCOT' || day.park === 'Animal Kingdom') && crowd >= 8) return true;
+  // Magic Kingdom — worth it once busy, or earlier for thrill-focused parties
+  if (day.park === 'Magic Kingdom' && crowd >= 5) return true;
+  // EPCOT and Animal Kingdom — less ride-dependent, but still worth it on genuinely busy days
+  if ((day.park === 'EPCOT' || day.park === 'Animal Kingdom') && crowd >= 7) return true;
   return false;
 }
