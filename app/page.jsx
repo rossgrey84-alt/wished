@@ -504,14 +504,14 @@ function PropertyStep({ property, resort, transport, onProperty, onResort, onTra
 
 function LightningStep({ value, onChange }) {
   const opts = [
-    { v: 'always', label: 'Yes, every park day', sub: 'Multi Pass on every day. Maximum convenience, maximum cost.' },
-    { v: 'smart', label: 'Where it earns its keep', sub: "We'll recommend per day — heavy parks, high-crowd days only." },
-    { v: 'none', label: 'Avoid it entirely', sub: 'Standby only. Rope drop discipline required.' },
-    { v: 'unsure', label: 'Recommend', sub: 'Based on your dates and party — we\'ll tell you.' },
+    { v: 'always', label: 'Yes, every park day', sub: 'Multi Pass daily, plus Single Pass for the big headliners. Maximum convenience, maximum cost.' },
+    { v: 'smart', label: 'Where it earns its keep', sub: "We'll recommend per day — heavy parks and high-crowd days only." },
+    { v: 'none', label: 'Avoid it entirely', sub: 'Standby queues only. Rope drop discipline required.' },
+    { v: 'unsure', label: 'Recommend', sub: "Based on your dates and party — we'll tell you which days are worth it." },
   ];
   return (
     <div>
-      <StepHeader icon={Zap} eyebrow="Question 8" title="Lightning Lane?" sub="Disney's paid line-skip system. Most experienced parties pay selectively, not always." />
+      <StepHeader icon={Zap} eyebrow="Question 8" title="Lightning Lane?" sub="Disney's paid line-skip system. Multi Pass bundles regular rides; Single Pass buys the top headliners individually (Tron, Rise of the Resistance, Flight of Passage). Most experienced parties pay selectively, not always." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -687,10 +687,17 @@ function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, on
     { v: 'no', label: 'No, skip them', sub: "Stick to the four main parks." },
   ];
 
-  const countOpts = [
-    { v: 1, label: 'Just one day', sub: 'A single water park visit during the trip.' },
-    { v: 2, label: 'Two days', sub: 'Either both parks if open, or two visits to the same one.' },
-  ];
+  const countOpts = numDays >= 10
+    ? [
+        { v: 1, label: 'Just one day', sub: 'A single water park visit during the trip.' },
+        { v: 2, label: 'Two days', sub: 'Either both parks, or two visits.' },
+        { v: 3, label: 'Three days', sub: 'Roughly one water park day per work week — good for a long trip.' },
+        { v: 4, label: 'Four days', sub: 'A water park day every few days. You really like them.' },
+      ]
+    : [
+        { v: 1, label: 'Just one day', sub: 'A single water park visit during the trip.' },
+        { v: 2, label: 'Two days', sub: 'Either both parks if open, or two visits to the same one.' },
+      ];
 
   const openOpts = [
     { v: 'typhoon', label: 'Typhoon Lagoon', sub: 'The more themed of the two — more relaxed, scenic.' },
@@ -790,75 +797,77 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </p>
       </div>
 
-      <div className="border-t border-stone-300 pt-10 mb-12">
-        <div className="flex items-center justify-between mb-6">
+      <div className="border-t border-stone-300 pt-12 mb-12">
+        <div className="flex items-center justify-between mb-8">
           <div className="text-xs tracking-[0.3em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
             Day by day
           </div>
-          <div className="text-xs text-stone-500 italic" style={{ fontFamily: 'Georgia, serif' }}>
+          <div className="text-xs text-stone-400 italic" style={{ fontFamily: 'Georgia, serif' }}>
             Tap any day to change it
           </div>
         </div>
-        <div className="space-y-8">
+        <div className="space-y-12">
           {days.map((d, i) => {
             const isPinned = pinnedDays[i] !== undefined;
             const warning = isPinned ? checkPinWarning(i, pinnedDays[i], d, answers) : null;
             return (
-              <div key={i} className="pb-10 border-b border-stone-200 last:border-0">
-                <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-6">
+              <div key={i} className="pb-12 border-b border-stone-200 last:border-0 last:pb-0">
+                <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] gap-8">
                   <div>
-                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                       Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
                     </div>
-                    <div className="text-2xl text-stone-900 italic mb-2 flex items-center gap-2 flex-wrap" style={{ fontFamily: 'Georgia, serif' }}>
+                    <div className="text-2xl text-stone-900 italic mb-3 leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
                       {d.park}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
                       {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
                       {isPinned && (
-                        <span className="text-xs not-italic px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                        <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                           Pinned
                         </span>
                       )}
                     </div>
                     <button
                       onClick={() => setEditingDay(editingDay === i ? null : i)}
-                      className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2 mt-1"
+                      className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
                       style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                     >
-                      {editingDay === i ? 'Close' : 'Change'}
+                      {editingDay === i ? '× Close' : 'Change →'}
                     </button>
                   </div>
                   <div>
                     {warning && (
-                      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-sm text-amber-900" style={{ fontFamily: 'Georgia, serif' }}>
-                        <span className="font-semibold not-italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Heads up · </span>
+                      <div className="mb-5 p-4 bg-amber-50 border-l-2 border-amber-400 text-sm text-amber-900 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                        <div className="not-italic mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Heads up</div>
                         {warning}
                       </div>
                     )}
-                    <p className="text-stone-800 leading-relaxed mb-5 italic" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
+                    <p className="text-stone-800 leading-relaxed mb-7 italic text-lg" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
                     {typeof d.rationale === 'object' && (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {d.rationale.morning && (
-                          <div className="grid grid-cols-[80px_1fr] gap-4">
-                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Morning</div>
-                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.morning}</div>
+                          <div>
+                            <div className="text-xs tracking-[0.25em] uppercase text-stone-400 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Morning</div>
+                            <div className="text-stone-700 leading-relaxed">{d.rationale.morning}</div>
                           </div>
                         )}
                         {d.rationale.afternoon && (
-                          <div className="grid grid-cols-[80px_1fr] gap-4">
-                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Afternoon</div>
-                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.afternoon}</div>
+                          <div>
+                            <div className="text-xs tracking-[0.25em] uppercase text-stone-400 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Afternoon</div>
+                            <div className="text-stone-700 leading-relaxed">{d.rationale.afternoon}</div>
                           </div>
                         )}
                         {d.rationale.evening && (
-                          <div className="grid grid-cols-[80px_1fr] gap-4">
-                            <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-0.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Evening</div>
-                            <div className="text-stone-700 leading-relaxed text-sm">{d.rationale.evening}</div>
+                          <div>
+                            <div className="text-xs tracking-[0.25em] uppercase text-stone-400 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Evening</div>
+                            <div className="text-stone-700 leading-relaxed">{d.rationale.evening}</div>
                           </div>
                         )}
                       </div>
                     )}
                     {d.flag && (
-                      <div className="inline-block text-xs tracking-wider uppercase px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 mt-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                      <div className="inline-block text-xs tracking-wider uppercase px-3 py-1.5 bg-amber-100 text-amber-900 border border-amber-300 mt-5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                         ⚑ {d.flag}
                       </div>
                     )}
@@ -904,21 +913,21 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
-      <div className="border-t border-stone-300 pt-10 mb-12">
+      <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
           Book these now
         </div>
-        <p className="text-sm text-stone-600 mb-8 max-w-xl" style={{ fontFamily: 'Georgia, serif' }}>
+        <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
           The actions worth taking now, ordered by what'll bite you if you skip it.
         </p>
-        <div className="space-y-5">
+        <div className="space-y-6">
           {generateActions(answers, days).map((a, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4 pb-5 border-b border-stone-200 last:border-0">
-              <div className="text-xs tracking-[0.2em] uppercase text-stone-500 pt-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            <div key={i} className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-3 md:gap-8 pb-6 border-b border-stone-200 last:border-0">
+              <div className="text-xs tracking-[0.2em] uppercase text-stone-400 pt-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {a.category}
               </div>
               <div>
-                <div className="text-stone-900 leading-snug mb-1" style={{ fontFamily: 'Georgia, serif' }}>{a.what}</div>
+                <div className="text-stone-900 leading-snug mb-1.5 text-lg" style={{ fontFamily: 'Georgia, serif' }}>{a.what}</div>
                 <div className="text-sm text-stone-500 leading-relaxed" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{a.when}</div>
               </div>
             </div>
@@ -1154,17 +1163,21 @@ function allocateParks(a) {
   let waterParkPositions = [];
   if (waterParkDays > 0) {
     if (waterParkDays === 1) {
-      // Single water park day — land at ~70% through trip, but not on rest day
       let target = Math.floor(numDays * 0.7);
       while (restDayPositions.includes(target) && target > 1) target--;
       waterParkPositions = [target];
-    } else if (waterParkDays === 2) {
-      // Two water park days — spread them out, neither adjacent to a rest day
-      let first = Math.floor(numDays * 0.4);
-      let second = Math.floor(numDays * 0.75);
-      while (restDayPositions.includes(first) && first > 1) first--;
-      while ((restDayPositions.includes(second) || second === first) && second > first + 1) second--;
-      waterParkPositions = [first, second];
+    } else {
+      // Spread N water park days evenly across the trip, offset from start, avoiding rest days
+      const interval = Math.floor(numDays / (waterParkDays + 1));
+      for (let i = 1; i <= waterParkDays; i++) {
+        let pos = i * interval;
+        // nudge off any collision with a rest day or an already-placed water park day
+        let guard = 0;
+        while ((restDayPositions.includes(pos) || waterParkPositions.includes(pos)) && pos > 1 && guard < numDays) {
+          pos--; guard++;
+        }
+        if (pos > 0 && pos < numDays && !waterParkPositions.includes(pos)) waterParkPositions.push(pos);
+      }
     }
   }
 
@@ -1483,7 +1496,7 @@ function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProp
   if (isArrival) return "Get to the park around lunch. Don't try to do too much.";
   const ropeDropTargets = getRopeDropTargets(park, wantedRides);
   const llTargets = getLLTargets(park, wantedRides);
-  if (lateStart) return `Late start today — arrive around 11am. Skip rope drop and use Lightning Lane for ${llTargets.slice(0,2).join(' and ') || 'the headliners'}.`;
+  if (lateStart) return `Late start today — arrive around 11am. Skip rope drop and use Multi Pass for ${llTargets.slice(0,2).join(' and ') || 'the headliners'}.`;
   let transportLine = '';
   if (resort && onProperty) {
     const transport = getResortTransport(resort, park);
@@ -1501,28 +1514,28 @@ function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProp
   }
   let prose = transportLine ? `${transportLine} ` : `Be at the gate ${onProperty ? '30' : '45'} minutes before opening. `;
   prose += `${onProperty ? 'Use Early Theme Park Entry — ' : ''}rope drop targets: ${ropeDropTargets.join(', then ')}.`;
-  if (useLLToday && llTargets.length) prose += ` Lightning Lane priority: ${llTargets.slice(0,2).join(' and ')}.`;
-  else if (!useLLToday) prose += ` Without Lightning Lane the first 90 minutes are everything.`;
+  if (useLLToday && llTargets.length) prose += ` Multi Pass priority: ${llTargets.slice(0,2).join(' and ')}.`;
+  else if (!useLLToday) prose += ` Without Multi Pass the first 90 minutes are everything.`;
   return prose;
 }
 
 function buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return "Resort check-in. Maybe pool for an hour if there's time.";
-    if (arrival === 'midday') return `Get to ${park} by 3pm. Lightning Lane any open headliners.`;
+    if (arrival === 'midday') return `Get to ${park} by 3pm. Multi Pass any open headliners.`;
   }
   if (isDeparture) return "Hit the things you missed, then go.";
   if (splitRhythm) return "Pool break from 1 to 4pm. Park is at its hottest and busiest now.";
-  if (park === 'Magic Kingdom') return useLLToday ? "Use the rest of your Lightning Lanes mid-afternoon. Sit-down lunch around 2pm." : "Hit the lower-demand rides — Mansion, Pirates, the People Mover. Sit-down lunch around 2pm.";
+  if (park === 'Magic Kingdom') return useLLToday ? "Use the rest of your Multi Pass slots mid-afternoon. Sit-down lunch around 2pm." : "Hit the lower-demand rides — Mansion, Pirates, the People Mover. Sit-down lunch around 2pm.";
   if (park === 'EPCOT') return "Afternoon is World Showcase time. Walk it counter-clockwise from Mexico.";
-  if (park === 'Hollywood Studios') return useLLToday ? "Galaxy's Edge in the afternoon. Use remaining Lightning Lanes on Tower of Terror or Rock 'n' Roller Coaster." : "Galaxy's Edge in the afternoon. Tower of Terror queues actually drop after lunch.";
+  if (park === 'Hollywood Studios') return useLLToday ? "Galaxy's Edge in the afternoon. Use remaining Multi Pass slots on Tower of Terror or Rock 'n' Roller Coaster." : "Galaxy's Edge in the afternoon. Tower of Terror queues actually drop after lunch.";
   if (park === 'Animal Kingdom') return "Animal trails in the afternoon — Maharajah Jungle Trek and Gorilla Falls.";
   return "";
 }
 
 function buildEvening({ park, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort }) {
   if (isDay1ShortVisit) {
-    if (arrival === 'evening') return `Evening at ${park}. Lightning Lane any one or two headliners if available.`;
+    if (arrival === 'evening') return `Evening at ${park}. Multi Pass any one or two headliners if available.`;
     if (arrival === 'midday') return "Stay through to closing if you can.";
   }
   if (isArrival) return "Dinner at the resort or somewhere off-park. Early to bed.";
@@ -1717,6 +1730,10 @@ function generateActions(a, days) {
   if (a.dining === 'full' || a.dining === 'mix' || a.dining === 'unsure') {
     actions.push({ category: 'Dining', what: 'Book sit-down restaurants 60 days out at 7am ET', when: 'The most popular tables go in the first minute' });
     if (hasYoungKids) actions.push({ category: 'Dining', what: "Skip Chef Mickey's — overpriced, mediocre, kids see Mickey for 90 seconds", when: 'Better character meals exist' });
+    actions.push({ category: 'Dining', what: "Skip the full Disney Dining Plan unless you're doing 2+ character meals — it rarely saves money otherwise", when: 'Do the maths on your actual meals before committing' });
+  }
+  if (a.dining === 'qs') {
+    actions.push({ category: 'Dining', what: 'If your package includes the Quick Service Dining Plan, these counter-service spots are where to spend the credits', when: 'Mobile Order from the app works with the plan — order while you walk' });
   }
   if (a.lightning === 'always') {
     actions.push({ category: 'Lightning Lane', what: 'Multi Pass selections every park day', when: onProperty ? '7 days before arrival, 7am ET' : '3 days before each park day' });
