@@ -35,6 +35,8 @@ export default function DisneyPlanner() {
   const update = (key, value) => setAnswers({ ...answers, [key]: value });
   const updateNested = (key, subkey, value) =>
     setAnswers({ ...answers, [key]: { ...answers[key], [subkey]: value } });
+  const setDateRange = (start, end) =>
+    setAnswers(prev => ({ ...prev, dates: { start, end } }));
 
   const next = () => setStep(s => Math.min(s + 1, totalSteps + 1));
   const back = () => setStep(s => Math.max(s - 1, 0));
@@ -91,7 +93,7 @@ export default function DisneyPlanner() {
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
         <header className="mb-16">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm tracking-[0.25em] uppercase text-stone-900" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500 }}>
+            <div className="text-sm tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
               Wished
             </div>
             {step > 0 && step <= totalSteps && (
@@ -117,7 +119,7 @@ export default function DisneyPlanner() {
 
         <div className="min-h-[400px]">
           {step === 0 && <Intro onStart={next} />}
-          {step === 1 && <DatesStep dates={answers.dates} arrival={answers.arrival} onChange={(k,v) => updateNested('dates', k, v)} onArrival={v => update('arrival', v)} />}
+          {step === 1 && <DatesStep dates={answers.dates} arrival={answers.arrival} onRange={setDateRange} onArrival={v => update('arrival', v)} />}
           {step === 2 && <PartyStep party={answers.party} onChange={(k,v) => updateNested('party', k, v)} />}
           {step === 3 && <DaysStep value={answers.days} customDays={answers.customDays} onChange={v => update('days', v)} onCustomDays={v => update('customDays', v)} />}
           {step === 4 && <ExperienceStep value={answers.experience} onChange={v => update('experience', v)} />}
@@ -178,7 +180,7 @@ function Intro({ onStart }) {
   return (
     <div>
       <div className="space-y-8 mb-24">
-        <div className="text-xs tracking-[0.4em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.4em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Walt Disney World, the way you wished
         </div>
         <h1 className="text-5xl md:text-7xl leading-[0.95] text-stone-900 font-normal italic">
@@ -207,7 +209,7 @@ function Intro({ onStart }) {
       </div>
 
       <div className="border-t border-stone-300 pt-16 mb-24">
-        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Why this exists
         </div>
         <p className="text-2xl md:text-3xl text-stone-800 italic leading-snug max-w-2xl mb-8" style={{ fontFamily: 'Georgia, serif' }}>
@@ -225,7 +227,7 @@ function Intro({ onStart }) {
       </div>
 
       <div className="border-t border-stone-300 pt-16 mb-24">
-        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Who this is for
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -272,8 +274,8 @@ function StepHeader({ icon: Icon, eyebrow, title, sub }) {
   return (
     <div className="mb-10">
       <div className="flex items-center gap-3 mb-4">
-        <Icon size={18} className="text-stone-600" strokeWidth={1.5} />
-        <div className="text-xs tracking-[0.3em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <Icon size={18} strokeWidth={1.5} style={{ color: '#9a7b2e' }} />
+        <div className="text-xs tracking-[0.3em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           {eyebrow}
         </div>
       </div>
@@ -285,21 +287,19 @@ function StepHeader({ icon: Icon, eyebrow, title, sub }) {
   );
 }
 
-function DatesStep({ dates, arrival, onChange, onArrival }) {
+function DatesStep({ dates, arrival, onRange, onArrival }) {
   const arrivalOpts = [
     { v: 'morning', label: 'Morning · before 11am' },
     { v: 'midday', label: 'Midday · 11am-3pm' },
     { v: 'evening', label: 'Late afternoon · after 3pm' },
     { v: 'night', label: 'Evening · after 7pm' },
   ];
+
   return (
     <div>
       <StepHeader icon={Calendar} eyebrow="Question 1" title="When are you going?" sub="We'll cross-reference crowd levels, special events, and any park early-closures across these dates." />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <DateField label="Arrival" value={dates.start} onChange={v => onChange('start', v)} />
-        <DateField label="Departure" value={dates.end} onChange={v => onChange('end', v)} />
-      </div>
-      <div>
+      <RangeCalendar start={dates.start} end={dates.end} onRangeChange={onRange} />
+      <div className="mt-10">
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
           What time do you arrive on Day 1?
         </div>
@@ -326,18 +326,141 @@ function DatesStep({ dates, arrival, onChange, onArrival }) {
   );
 }
 
-function DateField({ label, value, onChange }) {
+function RangeCalendar({ start, end, onRangeChange }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const initialMonth = start ? new Date(start) : today;
+  const [viewMonth, setViewMonth] = useState(new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1));
+
+  const startDate = start ? new Date(start) : null;
+  const endDate = end ? new Date(end) : null;
+  if (startDate) startDate.setHours(0, 0, 0, 0);
+  if (endDate) endDate.setHours(0, 0, 0, 0);
+
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const handleDayClick = (day) => {
+    // Two-click logic: first click sets start (clears end), second click sets end.
+    if (!startDate || (startDate && endDate)) {
+      onRangeChange(fmt(day), '');
+    } else {
+      if (day < startDate) {
+        // clicked before start — restart the range from here
+        onRangeChange(fmt(day), '');
+      } else {
+        onRangeChange(fmt(startDate), fmt(day));
+      }
+    }
+  };
+
+  const nights = startDate && endDate ? Math.round((endDate - startDate) / 86400000) : null;
+
+  const prevMonth = () => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1));
+  const nextMonth = () => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1));
+
+  const renderMonth = (monthDate) => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = (firstDay.getDay() + 6) % 7; // Mon=0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+
+    return (
+      <div className="flex-1">
+        <div className="text-center text-sm tracking-[0.15em] uppercase text-stone-700 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          {monthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+        </div>
+        <div className="grid grid-cols-7 gap-y-1 mb-2">
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, idx) => (
+            <div key={idx} className="text-center text-xs text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-y-1">
+          {cells.map((day, idx) => {
+            if (!day) return <div key={idx} />;
+            day.setHours(0, 0, 0, 0);
+            const isPast = day < today;
+            const isStart = startDate && day.getTime() === startDate.getTime();
+            const isEnd = endDate && day.getTime() === endDate.getTime();
+            const inRange = startDate && endDate && day > startDate && day < endDate;
+            const isEdge = isStart || isEnd;
+            return (
+              <div key={idx} className="flex justify-center">
+                <button
+                  onClick={() => !isPast && handleDayClick(day)}
+                  disabled={isPast}
+                  className="w-9 h-9 flex items-center justify-center text-sm transition-all"
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    cursor: isPast ? 'default' : 'pointer',
+                    background: isEdge ? '#9a7b2e' : inRange ? '#e8ddc2' : 'transparent',
+                    color: isPast ? '#d6d3d1' : isEdge ? '#f4f1ea' : '#1c1917',
+                    borderRadius: isEdge ? '4px' : inRange ? '0' : '4px',
+                  }}
+                >
+                  {day.getDate()}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const secondMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
+
   return (
-    <label className="block">
-      <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{label}</div>
-      <input
-        type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full bg-transparent border-b border-stone-400 pb-2 text-lg text-stone-900 focus:outline-none focus:border-stone-900 transition-colors"
-        style={{ fontFamily: 'Georgia, serif' }}
-      />
-    </label>
+    <div>
+      {/* Summary bar */}
+      <div className="grid grid-cols-3 gap-4 mb-8 pb-6 border-b border-stone-300">
+        <div>
+          <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Arrival</div>
+          <div className="text-lg text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>
+            {startDate ? startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Departure</div>
+          <div className="text-lg text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>
+            {endDate ? endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Nights</div>
+          <div className="text-lg text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>
+            {nights !== null ? nights : '—'}
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar nav */}
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center border border-stone-300 text-stone-600 hover:bg-stone-900 hover:text-stone-50 transition-colors">
+          <ChevronLeft size={16} />
+        </button>
+        <div className="text-xs tracking-[0.2em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          {!startDate ? 'Pick your arrival date' : !endDate ? 'Now pick your departure' : 'Tap a new arrival date to change'}
+        </div>
+        <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center border border-stone-300 text-stone-600 hover:bg-stone-900 hover:text-stone-50 transition-colors">
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* Two months side by side on desktop, one on mobile */}
+      <div className="flex flex-col md:flex-row gap-8">
+        {renderMonth(viewMonth)}
+        <div className="hidden md:block">{renderMonth(secondMonth)}</div>
+      </div>
+    </div>
   );
 }
 
@@ -770,6 +893,17 @@ function SelectCard({ selected, onClick, title, sub }) {
 
 function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
   const days = generateStubDays(answers, pinnedDays);
+  const [expandedDays, setExpandedDays] = useState({ 0: true });
+
+  const toggleExpand = (dayIdx) => {
+    setExpandedDays(prev => ({ ...prev, [dayIdx]: !prev[dayIdx] }));
+  };
+  const expandAll = () => {
+    const all = {};
+    days.forEach((_, i) => { all[i] = true; });
+    setExpandedDays(all);
+  };
+  const collapseAll = () => setExpandedDays({});
 
   const pinDay = (dayIdx, value) => {
     setPinnedDays({ ...pinnedDays, [dayIdx]: value });
@@ -786,7 +920,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
   return (
     <div>
       <div className="mb-12">
-        <div className="text-xs tracking-[0.4em] uppercase text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Your strategy
         </div>
         <h1 className="text-4xl md:text-5xl text-stone-900 font-normal italic leading-tight mb-6">
@@ -799,51 +933,76 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="flex items-center justify-between mb-8">
-          <div className="text-xs tracking-[0.3em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          <div className="text-xs tracking-[0.3em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
             Day by day
           </div>
-          <div className="text-xs text-stone-400 italic" style={{ fontFamily: 'Georgia, serif' }}>
-            Tap any day to change it
-          </div>
+          <button
+            onClick={() => {
+              const anyCollapsed = days.some((_, i) => !expandedDays[i]);
+              anyCollapsed ? expandAll() : collapseAll();
+            }}
+            className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          >
+            {days.some((_, i) => !expandedDays[i]) ? 'Expand all' : 'Collapse all'}
+          </button>
         </div>
-        <div className="space-y-12">
+        <div className="space-y-4">
           {days.map((d, i) => {
             const isPinned = pinnedDays[i] !== undefined;
             const warning = isPinned ? checkPinWarning(i, pinnedDays[i], d, answers) : null;
+            const isExpanded = !!expandedDays[i];
+            const priority = generateDayPriority(d, i, days.length, answers);
+            const dailyTip = generateDayTip(d, i, answers);
             return (
-              <div key={i} className="pb-12 border-b border-stone-200 last:border-0 last:pb-0">
-                <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] gap-8">
-                  <div>
-                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                      Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
-                    </div>
-                    <div className="text-2xl text-stone-900 italic mb-3 leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-                      {d.park}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                      {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
-                      {isPinned && (
-                        <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                          Pinned
+              <div key={i} className="border border-stone-200 bg-stone-50/40">
+                {/* Always-visible summary row — tap to expand */}
+                <button
+                  onClick={() => toggleExpand(i)}
+                  className="w-full text-left p-5 md:p-6 hover:bg-stone-100/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 flex-wrap mb-1.5">
+                        <span className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                          Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
                         </span>
-                      )}
+                        {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                        {isPinned && (
+                          <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            Pinned
+                          </span>
+                        )}
+                        {d.flag && (
+                          <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            ⚑ Note
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-2xl text-stone-900 italic leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+                        {d.park}
+                      </div>
+                      <div className="text-stone-600 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
+                        <span className="text-xs tracking-[0.15em] uppercase not-italic mr-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Today</span>
+                        {priority}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setEditingDay(editingDay === i ? null : i)}
-                      className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
-                      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-                    >
-                      {editingDay === i ? '× Close' : 'Change →'}
-                    </button>
+                    <div className="text-stone-400 pt-1 text-lg select-none" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                      {isExpanded ? '−' : '+'}
+                    </div>
                   </div>
-                  <div>
+                </button>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="px-5 md:px-6 pb-6">
                     {warning && (
                       <div className="mb-5 p-4 bg-amber-50 border-l-2 border-amber-400 text-sm text-amber-900 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
                         <div className="not-italic mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Heads up</div>
                         {warning}
                       </div>
                     )}
-                    <p className="text-stone-800 leading-relaxed mb-7 italic text-lg" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
+                    <p className="text-stone-800 leading-relaxed mb-7 italic text-lg border-t border-stone-200 pt-6" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
                     {typeof d.rationale === 'object' && (
                       <div className="space-y-6">
                         {d.rationale.morning && (
@@ -871,40 +1030,56 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         ⚑ {d.flag}
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {editingDay === i && (
-                  <div className="mt-6 ml-0 md:ml-[164px] p-5 bg-stone-50 border border-stone-300">
-                    <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                      Change Day {i + 1} to:
+                    {/* Daily tip */}
+                    <div className="mt-7 p-4 bg-stone-100/70" style={{ borderLeft: '2px solid #9a7b2e' }}>
+                      <div className="text-xs tracking-[0.2em] uppercase mb-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Insider tip</div>
+                      <div className="text-stone-700 leading-relaxed text-sm" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{dailyTip}</div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                      {['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom', 'Rest day', 'Water park'].map(opt => (
-                        <button
-                          key={opt}
-                          onClick={() => pinDay(i, opt)}
-                          className="text-left p-2 text-sm border transition-all"
-                          style={{
-                            background: d.park === opt ? '#1c1917' : '#fff',
-                            color: d.park === opt ? '#f4f1ea' : '#1c1917',
-                            borderColor: d.park === opt ? '#1c1917' : '#d6d3d1',
-                            fontFamily: 'Georgia, serif',
-                          }}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                    {isPinned && (
+
+                    {/* Change controls */}
+                    <div className="mt-6">
                       <button
-                        onClick={() => clearPin(i)}
-                        className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2"
+                        onClick={() => setEditingDay(editingDay === i ? null : i)}
+                        className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
                         style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                       >
-                        Remove pin · let us decide
+                        {editingDay === i ? '× Close' : 'Change this day →'}
                       </button>
-                    )}
+                      {editingDay === i && (
+                        <div className="mt-4 p-5 bg-white border border-stone-300">
+                          <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            Change Day {i + 1} to:
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                            {['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom', 'Rest day', 'Water park'].map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => pinDay(i, opt)}
+                                className="text-left p-2 text-sm border transition-all"
+                                style={{
+                                  background: d.park === opt ? '#1c1917' : '#fafaf9',
+                                  color: d.park === opt ? '#f4f1ea' : '#1c1917',
+                                  borderColor: d.park === opt ? '#1c1917' : '#d6d3d1',
+                                  fontFamily: 'Georgia, serif',
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          {isPinned && (
+                            <button
+                              onClick={() => clearPin(i)}
+                              className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2"
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                            >
+                              Remove pin · let us decide
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -914,7 +1089,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       </div>
 
       <div className="border-t border-stone-300 pt-12 mb-12">
-        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Book these now
         </div>
         <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
@@ -936,7 +1111,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       </div>
 
       <div className="border-t border-stone-300 pt-12 mb-12">
-        <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Things I wished I'd known
         </div>
         <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
@@ -1790,25 +1965,68 @@ function generateActions(a, days) {
   return actions;
 }
 
+function generateDayPriority(d, dayIndex, totalDays, a) {
+  const park = d.park;
+  const crowd = d.crowd;
+  const isArrival = dayIndex === 0;
+  const isDeparture = dayIndex === totalDays - 1 && totalDays > 1;
+  const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
+  const hasTeens = a.party.teens > 0;
+  const ropeDrop = a.rhythm === 'rope';
+
+  if (park === 'Travel day') return "Settle in. The trip starts properly tomorrow — rest tonight.";
+  if (park === 'Rest day') return "Protect energy. This day is what stops the trip falling apart later — don't be tempted to sneak in a park.";
+  if (park === 'Water park') return "Switch off. Different pace, no rush — this is the day that recharges everyone for the back half.";
+
+  if (isArrival) return "Ease in. Don't try to win the trip on day one — get your bearings and save the energy.";
+  if (isDeparture) return "Loose ends. Hit the one or two things you missed, then go out on a high.";
+
+  // Energy-management priorities mid-trip
+  if (hasTeens && dayIndex >= 4 && dayIndex <= 6 && ropeDrop) {
+    return "Watch the energy. This is where teens crash if every day's been rope-to-close. Consider a slower start.";
+  }
+  if ((park === 'Hollywood Studios' || park === 'Magic Kingdom') && crowd && crowd >= 7) {
+    return "Get the first 90 minutes right. On a day this busy, what you do before 10am decides the whole day.";
+  }
+  if (park === 'Hollywood Studios') {
+    return "Win the morning. This is the hardest park to do well — rope drop discipline matters most here.";
+  }
+  if (park === 'Magic Kingdom' && hasYoungKids) {
+    return "Front-load the magic. Hit the headliners while everyone's fresh; the afternoon is for slowing down.";
+  }
+  if (park === 'EPCOT') {
+    return "Pace it. EPCOT is a marathon, not a sprint — rides in the morning, eat and wander the afternoon.";
+  }
+  if (park === 'Animal Kingdom') {
+    return "Go early, leave early. The animals and the headliners are both best in the morning here.";
+  }
+  return "Rope drop the rides you care about, then let the day breathe.";
+}
+
+function generateDayTip(d, dayIndex, a) {
+  const park = d.park;
+  if (park === 'Travel day') return "Set up My Disney Experience tonight and link your tickets — don't do it in the queue tomorrow.";
+  if (park === 'Rest day') return "Disney Springs is free to enter and a good low-effort outing if the resort feels too quiet.";
+  if (park === 'Water park') return "Get there at opening — slides back up faster than rides, so the early advantage is bigger than you'd think.";
+
+  const tips = {
+    'Magic Kingdom': "Peter Pan's Flight builds the longest queue for the least ride — do it at rope drop or via Multi Pass, never standby midday.",
+    'EPCOT': "Walk World Showcase counter-clockwise from Mexico — you'll stay ahead of the crowd flowing the obvious way.",
+    'Hollywood Studios': "Slinky Dog Dash is the hardest Multi Pass to get here — book it the moment your window opens, before anything else.",
+    'Animal Kingdom': "Flight of Passage builds the longest wait in all of Disney World — rope drop it or buy the Single Pass, full stop.",
+  };
+  return tips[park] || "Refresh the app for Lightning Lane drops — cancellations appear constantly through the day.";
+}
+
 function generateTips(a) {
-  const onProperty = a.property === 'on';
   const tips = [];
 
   // The genuine insider tier — counterintuitive, specific, money/time savers. All universal.
-  tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot, you can keep changing it. Book the easiest available ride just to start the clock, then modify it to something better as slots open up through the day. Refresh the app obsessively — cancellations drop in constantly and that's how people snag Seven Dwarfs at 2pm." });
-  tips.push({ title: "Book your first Lightning Lane the second you tap into ride one", body: "The booking window opens the moment you enter the park. Don't wait — open the app as you walk onto your first rope-drop ride and grab your first Multi Pass for later. Every hour you delay, the good return times disappear." });
-  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table reservation eats the exact 90 minutes when Lightning Lane and rope-drop momentum matter most. Book meals for 11am or after 4pm — the prime ride hours stay free, and the restaurants are quieter anyway." });
-  tips.push({ title: 'Mobile Order before you even feel hungry', body: "Order on the app an hour ahead while you're in a queue or on a ride, pick a collection window, and walk straight past the lunchtime scrum. The food courts at noon are the worst queue in the park and the easiest one to skip entirely." });
-  tips.push({ title: 'The nighttime show is the best time to ride', body: "When the fireworks start, wait times on the big rides collapse — everyone's watching the sky. See the show properly once, then on other nights ride during it. You'll walk onto things that had two-hour queues at lunch." });
-  tips.push({ title: 'Your on-ride photos are already in the app', body: "You don't need to buy them at the kiosk. On-ride and character photos sync to My Disney Experience automatically — and if your ticket includes Memory Maker or you're a resort guest, downloading them is free. Always check the app before paying a kiosk." });
-  tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes. The crowds flee and the queues empty, so a £1 poncho from home (not the £12 one at the gate) turns a downpour into the quietest, fastest hour of your day." });
-  tips.push({ title: 'Single rider lines exist on rides nobody expects', body: "Test Track, Rock 'n' Roller Coaster, Expedition Everest and a few others run a single rider queue that's a fraction of standby. Even as a family you can use it one at a time on the ride you most want to repeat — it's the closest thing to a free Lightning Lane." });
-
-  if (onProperty) {
-    tips.push({ title: 'Spend Early Entry on the hardest ride, not the easy ones', body: "That 30-minute head start is enough to walk onto a ride that'll hit a two-hour wait by noon. Don't fritter it on low-demand rides you could do anytime — aim it straight at the single hardest-to-get ride of the day." });
-  } else {
-    tips.push({ title: "One parking payment covers every park, all day", body: "Your parking receipt is valid across all four parks — so if you switch parks, don't pay twice. And Disney Springs parking is free, which makes it a cheaper spot to grab a rideshare from than the park lots." });
-  }
+  tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot, you can keep changing it. Book the easiest available ride just to start the clock, then modify it to something better as slots open up. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
+  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and restaurants are quieter." });
+  tips.push({ title: 'The nighttime show is the best time to ride', body: "When the fireworks start, waits on the big rides collapse — everyone's watching the sky. See the show properly once, then ride during it on other nights." });
+  tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. If your ticket includes Memory Maker or you're a resort guest, they're free — always check before paying a kiosk." });
+  tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes and the crowds flee. A £1 poncho from home turns a downpour into the quietest, fastest hour of your day." });
 
   return tips;
 }
