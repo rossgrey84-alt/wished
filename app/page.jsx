@@ -1351,24 +1351,58 @@ function allocateParks(a) {
       }
     }
   }
-  // Water park positioning — break up consecutive park days, ideally in second half
+  // Water park positioning — absolute day indices (0-indexed)
+  // First one around day 3-4 (indices 3-4), rest spread through back half
   let waterParkPositions = [];
   if (waterParkDays > 0) {
+    // Helper: push if valid
+    const tryAddWaterPark = (targetIdx) => {
+      if (targetIdx < numDays && !restDayPositions.includes(targetIdx) && !waterParkPositions.includes(targetIdx)) {
+        waterParkPositions.push(targetIdx);
+      }
+    };
+
     if (waterParkDays === 1) {
-      let target = Math.floor(numDays * 0.7);
-      while (restDayPositions.includes(target) && target > 1) target--;
-      waterParkPositions = [target];
-    } else {
-      // Spread N water park days evenly across the trip, offset from start, avoiding rest days
-      const interval = Math.floor(numDays / (waterParkDays + 1));
-      for (let i = 1; i <= waterParkDays; i++) {
-        let pos = i * interval;
-        // nudge off any collision with a rest day or an already-placed water park day
-        let guard = 0;
-        while ((restDayPositions.includes(pos) || waterParkPositions.includes(pos)) && pos > 1 && guard < numDays) {
-          pos--; guard++;
+      // Single: around day 3-4 (index 3 for 7d, index 4 for 14d)
+      const targetIdx = numDays <= 7 ? 3 : 4;
+      tryAddWaterPark(targetIdx);
+      // If blocked, try forward
+      for (let i = targetIdx + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
+        tryAddWaterPark(i);
+      }
+    } else if (waterParkDays === 2) {
+      // Two: day 4 (index 3), then day 7-8 (indices 6-7)
+      const idx1 = 3, idx2 = numDays <= 10 ? 6 : 7;
+      tryAddWaterPark(idx1);
+      tryAddWaterPark(idx2);
+      // Fill any gaps
+      for (let i = idx1 + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
+        tryAddWaterPark(i);
+      }
+      for (let i = idx2 + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
+        tryAddWaterPark(i);
+      }
+    } else if (waterParkDays === 3) {
+      // Three: day 4 (idx 3), day 7 (idx 6), day 12 (idx 11)
+      tryAddWaterPark(3);
+      tryAddWaterPark(6);
+      tryAddWaterPark(11);
+      // Fill if blocked
+      for (let i = 0; i < numDays && waterParkPositions.length < waterParkDays; i++) {
+        if (i >= 3 && !restDayPositions.includes(i) && !waterParkPositions.includes(i)) {
+          waterParkPositions.push(i);
         }
-        if (pos > 0 && pos < numDays && !waterParkPositions.includes(pos)) waterParkPositions.push(pos);
+      }
+    } else {
+      // Four or more: day 4, 7, 11, 13, then space rest
+      const baseIdx = [3, 6, 10, 12];
+      baseIdx.slice(0, waterParkDays).forEach(idx => tryAddWaterPark(idx));
+      // Fill remaining by spacing through back half
+      if (waterParkPositions.length < waterParkDays) {
+        const interval = Math.max(1, Math.floor((numDays - 14) / (waterParkDays - 4 + 1)));
+        for (let i = 13; i < numDays && waterParkPositions.length < waterParkDays; i += interval) {
+          tryAddWaterPark(i);
+        }
       }
     }
   }
