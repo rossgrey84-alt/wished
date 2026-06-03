@@ -92,14 +92,26 @@ export default function DisneyPlanner() {
     }}>
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
         <header className="mb-16">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
             <div className="text-sm tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
               Wished
             </div>
-            {step > 0 && step <= totalSteps && (
+            {step > 0 && step <= totalSteps ? (
               <div className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {step} / {totalSteps}
               </div>
+            ) : (
+              <nav className="flex items-center gap-5 flex-wrap">
+                <a href="/fireworks" style={{ textDecoration: 'none' }}>
+                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>Fireworks</span>
+                </a>
+                <a href="/lightning-lane" style={{ textDecoration: 'none' }}>
+                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>Lightning Lane</span>
+                </a>
+                <a href="/what-to-pack" style={{ textDecoration: 'none' }}>
+                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>What to Pack</span>
+                </a>
+              </nav>
             )}
           </div>
           <div className="h-px bg-stone-400/40 w-full"></div>
@@ -968,6 +980,16 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                           Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
                         </span>
                         {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                        {d.llmp === true && (
+                          <span className="text-xs px-2 py-0.5 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#f0e9d6', color: '#9a7b2e', border: '1px solid #d9c89a' }}>
+                            ⚡ Lightning Lane Multi Pass
+                          </span>
+                        )}
+                        {d.llmp === false && (
+                          <span className="text-xs px-2 py-0.5 tracking-wider uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif', border: '1px solid #d6d3d1' }}>
+                            Standby OK
+                          </span>
+                        )}
                         {isPinned && (
                           <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                             Pinned
@@ -987,9 +1009,13 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         {priority}
                       </div>
                     </div>
-                    <div className="text-stone-400 pt-1 text-lg select-none" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                      {isExpanded ? '−' : '+'}
-                    </div>
+                  </div>
+                  <div
+                    className="mt-4 pt-3 border-t border-stone-200 flex items-center justify-center gap-2 text-xs tracking-[0.2em] uppercase select-none"
+                    style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
+                  >
+                    <span className="text-base leading-none">{isExpanded ? '−' : '+'}</span>
+                    {isExpanded ? 'Close day' : 'Tap to see full day'}
                   </div>
                 </button>
 
@@ -1227,18 +1253,37 @@ function isResortSkyliner(resortName) {
 function generateStubDays(a, pinnedDays = {}) {
   const allocation = allocateParks(a, pinnedDays);
   const sequence = sequenceParks(allocation, a, pinnedDays);
+  const mkBump = allocation._mkBump || { bumped: false };
+  const hasTravelDay = allocation.includes('Travel day');
   const visitCounts = {};
   return sequence.map((park, i) => {
     const count = (visitCounts[park] || 0) + 1;
     visitCounts[park] = count;
     const isRepeatVisit = count > 1;
     const date = getDateForDay(a.dates.start, i);
+    const crowd = date ? estimateCrowd(date, park) : null;
+    const isParkDay = ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'].includes(park);
+    // Arrival day = day 0. No Lightning Lane Multi Pass recommendation on arrival day —
+    // a partial day (especially an evening-only visit) doesn't justify the cost.
+    const isArrivalDay = i === 0;
+    let llmp = null;
+    if (isParkDay && !isArrivalDay) {
+      if (a.lightning === 'always') llmp = true;
+      else if (a.lightning === 'none') llmp = false;
+      else llmp = shouldBuyLL({ park, crowd: crowd || 5 }, a);
+    }
+    let flag = detectFlag(park, i, sequence.length, a, date);
+    // Surface the MK-bump explanation on the day MK was moved to
+    if (mkBump.bumped && mkBump.day === i) {
+      flag = mkBump.reason;
+    }
     return {
       park,
       date,
-      crowd: date ? estimateCrowd(date, park) : null,
-      rationale: generateRationale(park, i, sequence.length, a, date, isRepeatVisit),
-      flag: detectFlag(park, i, sequence.length, a, date),
+      crowd,
+      llmp,
+      rationale: generateRationale(park, i, sequence.length, a, date, isRepeatVisit, sequence),
+      flag,
     };
   });
 }
@@ -1352,72 +1397,84 @@ function allocateParks(a) {
     }
   }
   // Water park positioning — absolute day indices (0-indexed)
-  // First one around day 3-4 (indices 3-4), rest spread through back half
+  // First one around day 4, rest spaced through the trip. Never days 1-2, never departure day.
   let waterParkPositions = [];
   if (waterParkDays > 0) {
-    // Helper: push if valid
-    const tryAddWaterPark = (targetIdx) => {
-      if (targetIdx < numDays && !restDayPositions.includes(targetIdx) && !waterParkPositions.includes(targetIdx)) {
-        waterParkPositions.push(targetIdx);
+    const lastDay = numDays - 1; // departure day — avoid
+    const minDay = 3; // index 3 = day 4 earliest (day 3 only as fallback on short trips)
+
+    // Find the free slot nearest a target, preferring to keep at least `gap` from existing picks
+    const placeNear = (target, gap) => {
+      const isValid = (idx) =>
+        idx >= minDay && idx < lastDay &&
+        !restDayPositions.includes(idx) &&
+        !waterParkPositions.includes(idx) &&
+        waterParkPositions.every(p => Math.abs(p - idx) >= gap);
+      if (isValid(target)) { waterParkPositions.push(target); return true; }
+      // search outward from target
+      for (let d = 1; d < numDays; d++) {
+        if (isValid(target + d)) { waterParkPositions.push(target + d); return true; }
+        if (isValid(target - d)) { waterParkPositions.push(target - d); return true; }
       }
+      return false;
     };
 
-    if (waterParkDays === 1) {
-      // Single: around day 3-4 (index 3 for 7d, index 4 for 14d)
-      const targetIdx = numDays <= 7 ? 3 : 4;
-      tryAddWaterPark(targetIdx);
-      // If blocked, try forward
-      for (let i = targetIdx + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
-        tryAddWaterPark(i);
+    // Relaxed fallback: ignore gap, still respect floor and departure
+    const placeAnywhere = (target) => {
+      const isValid = (idx) =>
+        idx >= minDay && idx < lastDay &&
+        !restDayPositions.includes(idx) &&
+        !waterParkPositions.includes(idx);
+      for (let d = 0; d < numDays; d++) {
+        if (isValid(target + d)) { waterParkPositions.push(target + d); return true; }
+        if (isValid(target - d)) { waterParkPositions.push(target - d); return true; }
       }
-    } else if (waterParkDays === 2) {
-      // Two: day 4 (index 3), then day 7-8 (indices 6-7)
-      const idx1 = 3, idx2 = numDays <= 10 ? 6 : 7;
-      tryAddWaterPark(idx1);
-      tryAddWaterPark(idx2);
-      // Fill any gaps
-      for (let i = idx1 + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
-        tryAddWaterPark(i);
-      }
-      for (let i = idx2 + 1; i < numDays && waterParkPositions.length < waterParkDays; i++) {
-        tryAddWaterPark(i);
-      }
-    } else if (waterParkDays === 3) {
-      // Three: day 4 (idx 3), day 7 (idx 6), day 12 (idx 11)
-      tryAddWaterPark(3);
-      tryAddWaterPark(6);
-      tryAddWaterPark(11);
-      // Fill if blocked
-      for (let i = 0; i < numDays && waterParkPositions.length < waterParkDays; i++) {
-        if (i >= 3 && !restDayPositions.includes(i) && !waterParkPositions.includes(i)) {
-          waterParkPositions.push(i);
+      // last resort: allow day 3 (index 2) if truly nothing else, still never days 1-2 or departure
+      for (let idx = 2; idx < lastDay; idx++) {
+        if (!restDayPositions.includes(idx) && !waterParkPositions.includes(idx)) {
+          waterParkPositions.push(idx); return true;
         }
       }
-    } else {
-      // Four or more: day 4, 7, 11, 13, then space rest
-      const baseIdx = [3, 6, 10, 12];
-      baseIdx.slice(0, waterParkDays).forEach(idx => tryAddWaterPark(idx));
-      // Fill remaining by spacing through back half
-      if (waterParkPositions.length < waterParkDays) {
-        const interval = Math.max(1, Math.floor((numDays - 14) / (waterParkDays - 4 + 1)));
-        for (let i = 13; i < numDays && waterParkPositions.length < waterParkDays; i += interval) {
-          tryAddWaterPark(i);
-        }
+      return false;
+    };
+
+    // Ideal targets by count and trip length
+    let targets;
+    if (waterParkDays === 1) targets = [Math.min(4, numDays <= 7 ? 3 : 4)];
+    else if (waterParkDays === 2) targets = [3, numDays <= 10 ? 6 : 7];
+    else if (waterParkDays === 3) targets = [3, 6, Math.min(11, lastDay - 2)];
+    else targets = [3, 6, 10, 12];
+
+    // For 4+ beyond the base list, spread remaining through the back half
+    if (waterParkDays > 4) {
+      for (let i = 4; i < waterParkDays; i++) {
+        targets.push(Math.min(lastDay - 1, 13 + (i - 4) * 2));
       }
     }
+
+    const minGap = numDays >= 12 ? 3 : 2;
+    targets.slice(0, waterParkDays).forEach(t => {
+      if (!placeNear(t, minGap)) placeAnywhere(t);
+    });
+    waterParkPositions.sort((a, b) => a - b);
   }
 
   let parkIdx = 0;
+  const lockedPositions = {}; // dayIdx -> 'Water park' | 'Rest day' (must not be moved by sequencer)
   for (let dayIdx = allocation.length; dayIdx < numDays; dayIdx++) {
     if (restDayPositions.includes(dayIdx)) {
-      allocation.push(a.restDayType === 'waterpark' ? 'Water park' : 'Rest day');
+      const type = a.restDayType === 'waterpark' ? 'Water park' : 'Rest day';
+      allocation.push(type);
+      lockedPositions[dayIdx] = type;
     } else if (waterParkPositions.includes(dayIdx)) {
       allocation.push('Water park');
+      lockedPositions[dayIdx] = 'Water park';
     } else {
       allocation.push(parkSequence[parkIdx] || parkSequence[parkSequence.length - 1] || 'Magic Kingdom');
       parkIdx++;
     }
   }
+  allocation._locked = lockedPositions;
   return allocation;
 }
 
@@ -1445,7 +1502,18 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
   const used = new Set();
   const sequence = new Array(numDays).fill(null);
 
-  // FIRST: lock in all user-pinned days
+  // Lock special days (water parks, rest days) at the positions allocateParks chose.
+  // These are treated like pins — placed first, never moved by scoring or the de-dupe shuffle.
+  const locked = allocation._locked || {};
+  Object.entries(locked).forEach(([idx, type]) => {
+    const i = parseInt(idx);
+    if (i < numDays && sequence[i] === null) {
+      sequence[i] = type;
+      used.add(i);
+    }
+  });
+
+  // FIRST: lock in all user-pinned days (these override even special days)
   Object.entries(pinnedDays).forEach(([idx, park]) => {
     const i = parseInt(idx);
     if (i < numDays) {
@@ -1460,13 +1528,84 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
     used.add(0);
   }
 
+  // FIRST-TIMER RULE: Magic Kingdom should anchor the first full day (never arrival day).
+  // It's the emotional centrepiece — first-timers want the castle first. Strong default,
+  // but if MK's crowd on that day is extreme (a holiday spike), bump it and record why.
+  const mkBumpInfo = { bumped: false, reason: null, day: null };
+  const isFirstTimer = a.experience !== 'returning';
+  if (isFirstTimer && allocation.filter(p => p === 'Magic Kingdom').length > 0) {
+    // First full day = first non-travel day that isn't already locked/pinned to something else
+    let firstFullDay = -1;
+    for (let i = 0; i < numDays; i++) {
+      if (sequence[i] === 'Travel day') continue;
+      if (sequence[i] === null) { firstFullDay = i; break; }
+      if (i > 0 && sequence[i] === null) { firstFullDay = i; break; }
+    }
+    // If day 0 is a morning arrival (no travel day) it can be the first full day; otherwise first open slot
+    if (firstFullDay === -1) {
+      for (let i = 0; i < numDays; i++) {
+        if (sequence[i] === null) { firstFullDay = i; break; }
+      }
+    }
+    if (firstFullDay >= 0) {
+      const mkCrowd = estimateCrowd(dates[firstFullDay], 'Magic Kingdom') || 5;
+      const EXTREME = 9; // crowd 9-10 = holiday-level spike (July 4th, Christmas week, etc.)
+      if (mkCrowd >= EXTREME) {
+        // Bump: find the nearest day with materially lower MK crowd, record the reason
+        let best = firstFullDay, bestCrowd = mkCrowd;
+        for (let i = 0; i < numDays; i++) {
+          if (sequence[i] !== null || i === 0 && allocation.includes('Travel day')) continue;
+          const c = estimateCrowd(dates[i], 'Magic Kingdom') || 5;
+          if (c < bestCrowd - 1) { best = i; bestCrowd = c; }
+        }
+        if (best !== firstFullDay) {
+          sequence[best] = 'Magic Kingdom';
+          used.add(best);
+          mkBumpInfo.bumped = true;
+          mkBumpInfo.day = best;
+          mkBumpInfo.reason = `Magic Kingdom usually leads your trip, but ${dates[firstFullDay].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} is a peak crowd day there — we've moved it to ${dates[best].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} so your first castle day isn't the busiest one of the trip.`;
+        } else {
+          // Couldn't find a better day — keep it first
+          sequence[firstFullDay] = 'Magic Kingdom';
+          used.add(firstFullDay);
+        }
+      } else {
+        sequence[firstFullDay] = 'Magic Kingdom';
+        used.add(firstFullDay);
+      }
+    }
+  }
+  allocation._mkBump = mkBumpInfo;
+
   // Now figure out what still needs to be placed
-  // Take original allocation, remove what's already been pinned (matching by count)
+  // Take original allocation, remove what's already been pinned/locked (matching by count)
   const pinnedCounts = {};
   Object.values(pinnedDays).forEach(p => { pinnedCounts[p] = (pinnedCounts[p] || 0) + 1; });
   if (allocation.includes('Travel day') && sequence[0] === 'Travel day' && !pinnedDays[0]) {
     pinnedCounts['Travel day'] = (pinnedCounts['Travel day'] || 0) + 1;
   }
+  // Locked special days are already placed — count them so they aren't re-placed
+  Object.values(locked).forEach(type => {
+    // only count if that exact slot wasn't overridden by a user pin
+    pinnedCounts[type] = (pinnedCounts[type] || 0) + 1;
+  });
+  // First-timer MK we pre-placed above also needs counting so it isn't placed twice
+  if (isFirstTimer) {
+    // Count MK slots we set that aren't pins or locks
+    let prePlacedMK = 0;
+    for (let i = 0; i < numDays; i++) {
+      if (sequence[i] === 'Magic Kingdom' && pinnedDays[i] === undefined && locked[i] === undefined) prePlacedMK++;
+    }
+    if (prePlacedMK > 0) pinnedCounts['Magic Kingdom'] = (pinnedCounts['Magic Kingdom'] || 0) + prePlacedMK;
+  }
+  // Correct for any locked slot that a user pin overrode
+  Object.keys(locked).forEach(idx => {
+    const i = parseInt(idx);
+    if (pinnedDays[i] !== undefined) {
+      const type = locked[idx];
+      pinnedCounts[type] = Math.max(0, (pinnedCounts[type] || 0) - 1);
+    }
+  });
 
   const remainingAllocation = [];
   const allocCounts = {};
@@ -1511,13 +1650,18 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
   for (let i = 0; i < numDays; i++) {
     if (!sequence[i]) sequence[i] = allocation[i] || 'Magic Kingdom';
   }
-  // Don't shuffle pinned days
+  // Break up consecutive same-park days — but ONLY swap real park days, and never
+  // move a Water park / Rest day / Travel day, or swap anything into the first two full days.
+  const SPECIAL = new Set(['Water park', 'Rest day', 'Travel day']);
   for (let i = 1; i < sequence.length; i++) {
     if (pinnedDays[i] !== undefined || pinnedDays[i - 1] !== undefined) continue;
-    if (sequence[i] === sequence[i - 1] && sequence[i] !== 'Travel day') {
+    if (SPECIAL.has(sequence[i])) continue; // never relocate a special day
+    if (sequence[i] === sequence[i - 1]) {
       for (let j = i + 1; j < sequence.length; j++) {
         if (pinnedDays[j] !== undefined) continue;
-        if (sequence[j] !== sequence[i] && sequence[j] !== 'Travel day' && (j === sequence.length - 1 || sequence[j + 1] !== sequence[i])) {
+        if (SPECIAL.has(sequence[j])) continue; // don't pull a special day forward
+        if (j <= 1) continue; // never swap into day 1 or 2
+        if (sequence[j] !== sequence[i] && (j === sequence.length - 1 || sequence[j + 1] !== sequence[i])) {
           [sequence[i], sequence[j]] = [sequence[j], sequence[i]];
           break;
         }
@@ -1545,8 +1689,19 @@ function softPenalty(park, dayIdx, numDays, a, hasYoungKids) {
     return penalty;
   }
   if (park === 'Rest day' || park === 'Water park') {
-    if (isArrival || isDeparture) penalty += 10;
-    if (dayIdx === 1) penalty += 5;
+    // Never on arrival or departure
+    if (isArrival || isDeparture) penalty += 1000;
+    // Water parks specifically should not land in the first two full days — you need to settle in
+    // and get oriented at a real park first. Steep, escalating penalty for early placement.
+    if (park === 'Water park') {
+      if (dayIdx <= 1) penalty += 1000;      // day 1-2: effectively banned
+      else if (dayIdx === 2) penalty += 40;  // day 3: strongly discouraged but possible on short trips
+      else if (dayIdx === 3) penalty += 8;   // day 4: mild — this is the sweet spot, light touch
+    } else {
+      // Rest day — also shouldn't be too early, but less strict than water parks
+      if (dayIdx === 1) penalty += 60;
+      else if (dayIdx === 2) penalty += 15;
+    }
     return penalty;
   }
   if (isArrival && (park === 'Magic Kingdom' || park === 'Hollywood Studios')) {
@@ -1593,7 +1748,7 @@ function ruleBasedSequence(allocation, a, hasYoungKids) {
   return sequence;
 }
 
-function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit) {
+function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, sequence = []) {
   const isArrival = dayIndex === 0;
   const isDeparture = dayIndex === totalDays - 1 && totalDays > 1;
   const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
@@ -1635,8 +1790,8 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit) {
     return {
       headline: `${parkName.charAt(0).toUpperCase() + parkName.slice(1)} day. Different rhythm, different rules.${openNote}`,
       morning: "Arrive around opening — slides queue up faster than rides do, so the early-morning advantage is real. Wear swimwear under your clothes.",
-      afternoon: "Stay through the heat. The water keeps everyone cool and queues are shortest mid-afternoon. Cabana hire (~$300+) is the splurge that makes this a different experience.",
-      evening: "Out by 4-5pm — water park days are tiring in a different way and you'll want a quieter evening.",
+      afternoon: "Stay through the heat — the water keeps everyone cool and queues are shortest mid-afternoon. If you want a park evening as well, leave the water park by around 4pm. Cabana hire (~$300+) is the splurge that makes this a different experience.",
+      evening: "Most families are done after a water park — out by 4-5pm for a quieter night. But if energy's holding up, you've left in time to hop to a park for the evening: dinner and a nighttime show is very doable.",
     };
   }
   if (park === 'Rest day') {
@@ -1667,10 +1822,18 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit) {
   const useLLToday = a.lightning === 'always' ? true : a.lightning === 'none' ? false : shouldBuyLL({ park, crowd: crowd || 5 }, a);
   const isDay1ShortVisit = isArrival && (arrival === 'midday' || arrival === 'evening');
 
+  // For split-day rhythm: pick a different park for the evening return (everyone doing splits has a hopper).
+  // Prefer a park that pairs well for an evening — fireworks/showcase parks, and not the same as the morning.
+  let splitEveningPark = null;
+  if (splitRhythm && !isArrival && !isDeparture && ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'].includes(park)) {
+    const eveningCandidates = ['EPCOT', 'Magic Kingdom', 'Hollywood Studios']; // good evening parks, AK closes early
+    splitEveningPark = eveningCandidates.find(c => c !== park) || null;
+  }
+
   const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
   const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport });
-  const afternoon = buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
-  const evening = buildEvening({ park, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort });
+  const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
+  const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort });
 
   return { headline, morning, afternoon, evening };
 }
@@ -1745,13 +1908,17 @@ function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProp
   return prose;
 }
 
-function buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit }) {
+function buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return "Resort check-in. Maybe pool for an hour if there's time.";
-    if (arrival === 'midday') return `Get to ${park} by 3pm. Multi Pass any open headliners.`;
+    if (arrival === 'midday') return `Get to ${park} by 3pm. Head straight for one or two headliners on standby — don't bother with Multi Pass for a half-day.`;
   }
   if (isDeparture) return "Hit the things you missed, then go.";
-  if (splitRhythm) return "Pool break from 1 to 4pm. Park is at its hottest and busiest now.";
+  if (splitRhythm) {
+    return splitEveningPark
+      ? `Back to the resort from about 1pm — pool, lunch, a proper break through the hottest hours. You'll head out again this evening, but to ${splitEveningPark} rather than back here.`
+      : "Pool break from 1 to 4pm. Park is at its hottest and busiest now.";
+  }
   if (park === 'Magic Kingdom') return useLLToday ? "Use the rest of your Multi Pass slots mid-afternoon. Sit-down lunch around 2pm." : "Hit the lower-demand rides — Mansion, Pirates, the People Mover. Sit-down lunch around 2pm.";
   if (park === 'EPCOT') return "Afternoon is World Showcase time. Walk it counter-clockwise from Mexico.";
   if (park === 'Hollywood Studios') return useLLToday ? "Galaxy's Edge in the afternoon. Use remaining Multi Pass slots on Tower of Terror or Rock 'n' Roller Coaster." : "Galaxy's Edge in the afternoon. Tower of Terror queues actually drop after lunch.";
@@ -1759,13 +1926,22 @@ function buildAfternoon({ park, splitRhythm, isDeparture, useLLToday, wantedRide
   return "";
 }
 
-function buildEvening({ park, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort }) {
+function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort }) {
   if (isDay1ShortVisit) {
-    if (arrival === 'evening') return `Evening at ${park}. Multi Pass any one or two headliners if available.`;
+    if (arrival === 'evening') return `Evening at ${park}. Pick one or two headliners on standby — or a single Lightning Lane Single Pass if there's one ride you can't miss. Not worth Multi Pass for a few hours.`;
     if (arrival === 'midday') return "Stay through to closing if you can.";
   }
   if (isArrival) return "Dinner at the resort or somewhere off-park. Early to bed.";
   if (isDeparture) return "";
+  // Split-day rhythm: head out to a different park for the evening
+  if (splitEveningPark) {
+    const reason = {
+      'EPCOT': "Ride Test Track or Frozen Ever After on the way in, then dinner around World Showcase and the nighttime show to finish.",
+      'Magic Kingdom': "Cooler and lit up at night — ride Seven Dwarfs and the mountains as queues drop, then Happily Ever After to close.",
+      'Hollywood Studios': "Galaxy's Edge lit up after dark — ride Rise of the Resistance or Tower of Terror in the final hour, and Fantasmic if it's running.",
+    }[splitEveningPark] || "A fresh park for the evening.";
+    return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — tap in with your Park Hopper (valid after 2pm).`;
+  }
   if (isRepeatVisit && (hopper === 'yes' || hopper === 'unsure')) {
     const hopTarget = pickEveningHopTarget(park, resort);
     if (hopTarget) return `Park hopper move: from 5pm, hop to ${hopTarget} for the evening — ${getEveningHopReason(hopTarget)}.`;
@@ -2055,11 +2231,15 @@ function generateDayTip(d, dayIndex, a) {
 function generateTips(a) {
   const tips = [];
 
-  // The genuine insider tier — counterintuitive, specific, money/time savers. All universal.
-  tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot, you can keep changing it. Book the easiest available ride just to start the clock, then modify it to something better as slots open up. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
-  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and restaurants are quieter." });
-  tips.push({ title: 'The nighttime show is the best time to ride', body: "When the fireworks start, waits on the big rides collapse — everyone's watching the sky. See the show properly once, then ride during it on other nights." });
-  tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. If your ticket includes Memory Maker or you're a resort guest, they're free — always check before paying a kiosk." });
+  // The genuine insider tier — specific, researched, the stuff that changes a trip.
+  tips.push({ title: 'Watch the Magic Kingdom fireworks from Gaston\'s Tavern', body: "Everyone packs onto Main Street an hour early. Head behind the castle to the outdoor seating by Gaston's Tavern in New Fantasyland instead — you get a calm, unique view of the show without camping out for a spot, and you're near Seven Dwarfs for a near-walk-on right after." });
+  tips.push({ title: 'Off-site? Rope drop Frontierland, not Fantasyland', body: "Early Entry resort guests flood Fantasyland and Tomorrowland first. If you don't have Early Entry, head the opposite way to Frontierland or Adventureland at opening — Big Thunder and Tiana's Bayou Adventure will be near walk-ons while everyone else queues for Seven Dwarfs." });
+  tips.push({ title: 'Bundle your rope drop rides by location', body: "The first 60-90 minutes are worth more than any other part of the day — headliner waits run 50-70% shorter than midday. Don't crisscross the park: do Seven Dwarfs then Winnie the Pooh (both Fantasyland), or Space Mountain then Buzz (both Tomorrowland). You can clear 4-6 major rides before most people finish their first." });
+  tips.push({ title: 'Use the Tangled bathrooms shortcut', body: "There's a hidden walkway by the Tangled-themed restrooms between Fantasyland and Liberty Square that locals use to cut across the park fast at rope drop. It's the quickest pivot if your first-choice ride is down when you arrive — and something always is." });
+  tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot you can keep changing it. Book the easiest available ride just to start the clock, then modify it upward as better times appear. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
+  tips.push({ title: 'Arrive 45-60 minutes before posted opening', body: "If you show up at the official opening time, you're already late — the rope-drop advantage is gone. Magic Kingdom is worst for this because you park at the TTC and still have a monorail or ferry to go. Build in the extra hop." });
+  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and the restaurants are quieter anyway." });
+  tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. If your ticket includes Memory Maker or you're a resort guest, they're free — always check the app before paying at a kiosk." });
   tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes and the crowds flee. A £1 poncho from home turns a downpour into the quietest, fastest hour of your day." });
 
   return tips;
