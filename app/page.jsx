@@ -931,6 +931,18 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300">
+        <div className="text-xs tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
+          Wished
+        </div>
+        <button
+          onClick={onReset}
+          className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+        >
+          <RotateCcw size={13} /> Start a new plan
+        </button>
+      </div>
       <div className="mb-12">
         <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Your strategy
@@ -1116,10 +1128,10 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Book these now
+          Before you go
         </div>
         <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
-          The actions worth taking now, ordered by what'll bite you if you skip it.
+          The things to sort before you travel — booking windows, tickets, and decisions, ordered by what'll bite you if you leave it.
         </p>
         <div className="space-y-6">
           {generateActions(answers, days).map((a, i) => (
