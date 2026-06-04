@@ -1128,28 +1128,6 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Before you go
-        </div>
-        <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
-          The things to sort before you travel — booking windows, tickets, and decisions, ordered by what'll bite you if you leave it.
-        </p>
-        <div className="space-y-6">
-          {generateActions(answers, days).map((a, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-3 md:gap-8 pb-6 border-b border-stone-200 last:border-0">
-              <div className="text-xs tracking-[0.2em] uppercase text-stone-400 pt-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                {a.category}
-              </div>
-              <div>
-                <div className="text-stone-900 leading-snug mb-1.5 text-lg" style={{ fontFamily: 'Georgia, serif' }}>{a.what}</div>
-                <div className="text-sm text-stone-500 leading-relaxed" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{a.when}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-stone-300 pt-12 mb-12">
-        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Things I wished I'd known
         </div>
         <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
@@ -1165,13 +1143,15 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
-      <button
-        onClick={onReset}
-        className="flex items-center gap-2 text-sm tracking-wider uppercase text-stone-600 hover:text-stone-900 transition-colors"
-        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-      >
-        <RotateCcw size={14} /> Start over
-      </button>
+      <div className="flex justify-center pt-4 pb-8">
+        <button
+          onClick={onReset}
+          className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e', border: '1px solid #d9c89a', background: '#f9f6ef' }}
+        >
+          <RotateCcw size={14} /> Start a new plan
+        </button>
+      </div>
     </div>
   );
 }
@@ -1540,33 +1520,32 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
     used.add(0);
   }
 
-  // FIRST-TIMER RULE: Magic Kingdom should anchor the first full day (never arrival day).
+  // FIRST-TIMER RULE: Magic Kingdom should anchor the first FULL day (never the arrival day).
   // It's the emotional centrepiece — first-timers want the castle first. Strong default,
   // but if MK's crowd on that day is extreme (a holiday spike), bump it and record why.
   const mkBumpInfo = { bumped: false, reason: null, day: null };
   const isFirstTimer = a.experience !== 'returning';
   if (isFirstTimer && allocation.filter(p => p === 'Magic Kingdom').length > 0) {
-    // First full day = first non-travel day that isn't already locked/pinned to something else
+    // Determine the first FULL day. Day 0 is only a "full day" if they arrive in the morning
+    // with no travel day. An evening/midday arrival, or a night-arrival travel day, means
+    // the first full day is day 1 (0-indexed) at the earliest.
+    const arrival = a.arrival || 'morning';
+    const morningArrival = arrival === 'morning';
+    const earliestFullDay = morningArrival ? 0 : 1;
+
     let firstFullDay = -1;
-    for (let i = 0; i < numDays; i++) {
+    for (let i = earliestFullDay; i < numDays; i++) {
       if (sequence[i] === 'Travel day') continue;
       if (sequence[i] === null) { firstFullDay = i; break; }
-      if (i > 0 && sequence[i] === null) { firstFullDay = i; break; }
-    }
-    // If day 0 is a morning arrival (no travel day) it can be the first full day; otherwise first open slot
-    if (firstFullDay === -1) {
-      for (let i = 0; i < numDays; i++) {
-        if (sequence[i] === null) { firstFullDay = i; break; }
-      }
     }
     if (firstFullDay >= 0) {
       const mkCrowd = estimateCrowd(dates[firstFullDay], 'Magic Kingdom') || 5;
       const EXTREME = 9; // crowd 9-10 = holiday-level spike (July 4th, Christmas week, etc.)
       if (mkCrowd >= EXTREME) {
-        // Bump: find the nearest day with materially lower MK crowd, record the reason
+        // Bump: find the nearest LATER day with materially lower MK crowd, record the reason
         let best = firstFullDay, bestCrowd = mkCrowd;
-        for (let i = 0; i < numDays; i++) {
-          if (sequence[i] !== null || i === 0 && allocation.includes('Travel day')) continue;
+        for (let i = earliestFullDay; i < numDays; i++) {
+          if (sequence[i] !== null) continue;
           const c = estimateCrowd(dates[i], 'Magic Kingdom') || 5;
           if (c < bestCrowd - 1) { best = i; bestCrowd = c; }
         }
