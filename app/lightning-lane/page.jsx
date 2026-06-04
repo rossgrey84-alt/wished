@@ -1,72 +1,93 @@
 "use client";
 import { GuideLayout, Section, Tip } from "../GuideLayout";
 
-export default function FireworksPage() {
+export default function LightningLanePage() {
   return (
     <GuideLayout
-      active="/fireworks"
+      active="/lightning-lane"
       eyebrow="The Guide"
-      title="Where to watch the fireworks"
-      intro="Everyone packs onto Main Street 45 minutes early and ends up craning over phones. There are better spots — some inside the parks, some you don't even need a ticket for. Here's where the people who've been many times actually stand."
+      title="Getting the most out of Lightning Lane"
+      intro="Disney's paid line-skip system is where first-timers waste the most money — and where a little strategy saves the most time. Here's how Multi Pass and Single Pass actually work, and how to use them so they're worth it."
     >
-      <Section heading="Magic Kingdom — Happily Ever After">
+      <Section heading="Multi Pass vs Single Pass — the basics">
         <p>
-          The show now projects down the length of Main Street, U.S.A., so the front-of-castle hub
-          gives you the full experience — fireworks plus projections. The catch is that the prime
-          hub spots fill up well over an hour before showtime, and on busy nights there isn't enough
-          room for everyone who wants in.
+          There are two things people lump together as "Lightning Lane." <strong>Multi Pass</strong>{" "}
+          is the bundle: you pay one price per day and reserve a set of rides, starting with up to
+          three and booking more as the day goes on. <strong>Single Pass</strong> is à la carte —
+          you buy individual access to the very top headliners that aren't included in Multi Pass
+          (think Seven Dwarfs Mine Train, TRON, Guardians of the Galaxy: Cosmic Rewind, Rise of the
+          Resistance, Flight of Passage).
         </p>
         <p>
-          If it's your first time and you want the complete projection effect, claim a spot on the
-          hub grass near Casey's Corner around an hour out. If you've seen it once already, the
-          smarter move is behind the castle in Fantasyland, near the Prince Charming Regal Carousel —
-          a calmer, genuinely lovely angle on the show that most people never think to use, and steps
-          from Seven Dwarfs Mine Train for a near-walk-on straight after.
+          You don't always need either. But on a busy day at the right park, Multi Pass is the
+          difference between riding eight things and riding three.
         </p>
-        <Tip label="Skip the crowd entirely">
-          Three Magic Kingdom resorts have open viewing of the fireworks with no park ticket needed:
-          the marina by Gasparilla Island Grill at the Grand Floridian, the fourth-floor observation
-          deck at the Contemporary, and the Polynesian beachfront (usually resort-guests only). You
-          miss the projections and soundtrack, but you skip the chaos completely.
+      </Section>
+
+      <Section heading="The one move that matters most">
+        <p>
+          The system is built around a rolling-booking mechanic that most people never exploit. You
+          start with three reservations. The moment you tap into your first ride, you can book a
+          fourth — and then another each time you redeem one. Until you tap in, you're stuck on just
+          those first three.
+        </p>
+        <Tip label="Tap in early, then keep modifying">
+          Book your first Multi Pass ride for as early as possible and tap in the moment your window
+          opens — that starts the rolling clock. From then on, you can keep changing any booked
+          slot to a better ride as availability shifts, without resetting anything. Book the easiest
+          available ride just to get the clock going, then trade up. Refreshing the app through the
+          day is how people snag Seven Dwarfs at 2pm.
         </Tip>
       </Section>
 
-      <Section heading="EPCOT — Luminous: The Symphony of Us">
+      <Section heading="Booking windows — resort guests get a head start">
         <p>
-          EPCOT's show is staged low around the World Showcase Lagoon, so unlike Magic Kingdom it's
-          hard to catch from neighbouring resorts. The upside: with the entire lagoon to spread out
-          around, crowds are far more forgiving than the Magic Kingdom hub. Anywhere on the promenade
-          with a clear water view works.
-        </p>
-        <p>
-          The bridge connecting EPCOT's International Gateway entrance to Disney's BoardWalk gives a
-          solid free view of the fireworks portion — grab a spot 20-30 minutes ahead. Inside the
-          park, the stretch between the United Kingdom and Canada pavilions is a reliable, less-mobbed
-          choice.
+          Staying on Disney property lets you book your first Multi Pass selections seven days before
+          check-in, covering your whole trip in one go. Everyone else books three days before each
+          park day. That head start genuinely matters for the rides that sell out fastest, so if
+          you're on-site, be ready the morning your window opens.
         </p>
       </Section>
 
-      <Section heading="Hollywood Studios & Animal Kingdom">
+      <Section heading="Is it worth it, park by park">
         <p>
-          Hollywood Studios runs Fantasmic! — a stadium show rather than a fireworks spectacular, so
-          arrive 45 minutes early for a seat, or look for the dining packages that include reserved
-          seating. Animal Kingdom doesn't do a nighttime fireworks show; the park is built around
-          early closes, so plan your evenings elsewhere.
+          <strong>Magic Kingdom</strong> — the park where Multi Pass is most worth it, almost any
+          day. It's big, ride-dense, and the standby lines are long. Build your day around park flow:
+          stay on the Adventureland / Frontierland / Liberty Square / Fantasyland side through the
+          morning, then shift to Tomorrowland. A common plan: Tier 1 pick like Peter Pan's Flight or
+          Tiana's Bayou Adventure, a Tier 2 like Haunted Mansion or Pirates, and Seven Dwarfs as a
+          Single Pass if it's a must-do.
+        </p>
+        <p>
+          <strong>Hollywood Studios</strong> — the highest-pressure park. Miss your windows and the
+          day unravels, because nearly everything is a headliner with a brutal standby. This is where
+          tapping in early and adjusting in real time matters most. Don't just grab the earliest
+          return (usually Star Tours) — hold out for Tower of Terror or Toy Story Mania.
+        </p>
+        <p>
+          <strong>EPCOT</strong> — the one where you can have a wonderful day and barely ride
+          anything. Multi Pass is the least necessary here, but Guardians of the Galaxy: Cosmic
+          Rewind as a Single Pass is the near-universal must-buy. If you do get Multi Pass, Remy's
+          Ratatouille or Test Track is the Tier 1 pick.
+        </p>
+        <p>
+          <strong>Animal Kingdom</strong> — usually the easiest to skip Multi Pass, with one big
+          exception: Flight of Passage builds the longest wait in all of Disney World. Rope drop it
+          or buy the Single Pass.
         </p>
       </Section>
 
-      <Section heading="Timing and weather">
+      <Section heading="The most common mistakes">
         <p>
-          The shows run nightly but can be delayed or cancelled in storms — common on summer
-          evenings. Don't panic if it's drizzling at 8pm; Florida storms usually pass fast, and a
-          delayed show often means a thinner crowd. On party nights (the Halloween and Christmas
-          events) the regular show is replaced by a special one and the park closes early to
-          non-party guests, so check the calendar if a particular show matters to you.
+          Using Lightning Lanes randomly instead of building around park flow. Booking a midday
+          sit-down lunch that eats your prime ride hours. Buying Multi Pass for a half-day or
+          evening-only visit, where it can't pay for itself. And grabbing the first return time
+          offered rather than the one that actually fits where you'll be.
         </p>
-        <Tip label="The repeat-night trick">
-          On the night you most want to ride rather than watch, use the show as your window: when the
-          fireworks start, standby waits on the big rides collapse because everyone's looking up. See
-          the show properly once, then ride during it on another night.
+        <Tip label="Don't pay for a partial day">
+          On an arrival day when you've only got an evening in the park, skip Multi Pass entirely.
+          Do a couple of headliners on standby, or buy a single Single Pass for the one ride you
+          can't miss. A few hours can't justify the day-rate.
         </Tip>
       </Section>
     </GuideLayout>
