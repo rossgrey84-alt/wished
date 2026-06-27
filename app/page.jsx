@@ -1178,11 +1178,21 @@ function checkPinWarning(dayIdx, pinnedPark, day, a) {
     return `${pinnedPark} on this day looks busy (crowd level ${crowd}/10). Another day in your window would likely be quieter — but if the date is locked for a specific reason like Fantasmic or a dining reservation, this is fine.`;
   }
 
-  // Halloween party warning for Magic Kingdom — driven by the real MNSSHP calendar,
-  // not a day-of-week guess. Only fires on an actual party night.
-  if (pinnedPark === 'Magic Kingdom' && day.date && isPartyNight(day.date)) {
-    const nice = day.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-    return `${nice} is a Mickey's Not-So-Scary Halloween Party night — Magic Kingdom closes to day-ticket guests at 6pm and the regular fireworks don't run. Move Magic Kingdom to another evening in your window, or treat this as a half-day and be out by 6.`;
+  // Party-night warning for Magic Kingdom — driven by the real published calendar, not a
+  // day-of-week guess. Names the correct event, and falls back to a "not published yet"
+  // nudge when the trip is in a party season we don't have dates for.
+  if (pinnedPark === 'Magic Kingdom' && day.date) {
+    const kind = partyKind(day.date);
+    if (kind) {
+      const nice = day.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      const name = kind === 'christmas' ? "Mickey's Very Merry Christmas Party" : "Mickey's Not-So-Scary Halloween Party";
+      return `${nice} is a ${name} night — Magic Kingdom closes to day-ticket guests at 6pm and the regular fireworks don't run. Move Magic Kingdom to another evening in your window, or treat this as a half-day and be out by 6.`;
+    }
+    const pending = pendingPartySeason(day.date);
+    if (pending) {
+      const season = pending === 'christmas' ? 'Christmas' : 'Halloween';
+      return `Your trip falls in ${season} party season, but Disney hasn't published the ${season} Party dates for this year yet (they usually drop a few months out). Some Magic Kingdom evenings may close early to day guests — plan the rest now and check back closer to your trip so we can pin the exact nights.`;
+    }
   }
 
   // Rest day in a weird position
@@ -1283,20 +1293,30 @@ function getDateForDay(startStr, dayIndex) {
   return d;
 }
 
-// ---- Special-event calendar (HARD-CODED, 2026 ONLY) ----
-// MNSSHP = Mickey's Not-So-Scary Halloween Party. On these nights Magic Kingdom closes
-// early to day-ticket guests (~6pm) and the standard fireworks (Happily Ever After) do
-// not run. So: a first-timer's MK day must never anchor on one, and we never recommend
+// ---- Magic Kingdom special-event calendar (HARD-CODED) ----
+// On party nights MK closes early to day-ticket guests (~6pm) and the regular fireworks
+// don't run. So: a first-timer's MK day must never anchor on one, and we never recommend
 // MK fireworks on one.
-// ⚠️ ANNUAL REFRESH: these dates go stale the moment Disney publishes 2027 party nights.
-// Update this set each year (or replace with a real data source) or the tool quietly
-// gives wrong MK guidance.
-// NOTE: Christmas party (MVMCP, Nov–Dec) is NOT encoded — no real dates wired yet.
+//   MNSSHP = Mickey's Not-So-Scary Halloween Party (Aug–Oct)
+//   MVMCP  = Mickey's Very Merry Christmas Party (Nov–Dec)
+//
+// ⚠️ ANNUAL REFRESH: these are real published dates for the years in KNOWN_PARTY_YEARS
+// only. When Disney publishes a new year's calendar, add the dates AND add the year to
+// KNOWN_PARTY_YEARS — otherwise that year falls through to the "not published yet" nudge.
 const MNSSHP_2026 = new Set([
   '2026-08-07', '2026-08-11', '2026-08-14', '2026-08-18', '2026-08-21', '2026-08-23', '2026-08-25', '2026-08-28', '2026-08-30',
   '2026-09-01', '2026-09-04', '2026-09-08', '2026-09-11', '2026-09-15', '2026-09-18', '2026-09-20', '2026-09-22', '2026-09-24', '2026-09-25', '2026-09-27', '2026-09-29',
   '2026-10-01', '2026-10-02', '2026-10-04', '2026-10-06', '2026-10-08', '2026-10-09', '2026-10-13', '2026-10-15', '2026-10-16', '2026-10-18', '2026-10-22', '2026-10-23', '2026-10-25', '2026-10-27', '2026-10-29',
 ]);
+const MVMCP_2026 = new Set([
+  '2026-11-08', '2026-11-09', '2026-11-12', '2026-11-13', '2026-11-15', '2026-11-17', '2026-11-19', '2026-11-20', '2026-11-24', '2026-11-25', '2026-11-27', '2026-11-29',
+  '2026-12-01', '2026-12-03', '2026-12-04', '2026-12-06', '2026-12-08', '2026-12-10', '2026-12-11', '2026-12-13', '2026-12-15', '2026-12-17', '2026-12-18', '2026-12-20', '2026-12-22',
+]);
+
+// Years for which we have a real, published party calendar. A trip that lands in a party
+// SEASON in a year NOT listed here means we don't know the dates yet — show the soft
+// "not published" nudge instead of silently implying there's no party.
+const KNOWN_PARTY_YEARS = new Set([2026]);
 
 // Local-time YYYY-MM-DD key — matches how estimateCrowd/detectFlag read dates with
 // getMonth()/getDate(), and avoids the toISOString() UTC off-by-one.
@@ -1307,10 +1327,30 @@ function dateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-// Is this date a Magic Kingdom MNSSHP party night? (2026 only.)
+// Confirmed party night → 'halloween' | 'christmas' | null.
+function partyKind(date) {
+  if (!date) return null;
+  const key = dateKey(date);
+  if (MNSSHP_2026.has(key)) return 'halloween';
+  if (MVMCP_2026.has(key)) return 'christmas';
+  return null;
+}
+
 function isPartyNight(date) {
-  if (!date) return false;
-  return MNSSHP_2026.has(dateKey(date));
+  return partyKind(date) !== null;
+}
+
+// Date falls in a party SEASON but in a year we have no data for → 'halloween' | 'christmas'
+// | null. Drives the "dates not published yet, check back" nudge so we never imply a party
+// season is party-free just because the calendar isn't out.
+function pendingPartySeason(date) {
+  if (!date) return null;
+  if (KNOWN_PARTY_YEARS.has(date.getFullYear())) return null; // we have real data
+  const m = date.getMonth();
+  const d = date.getDate();
+  if (m === 7 || m === 8 || m === 9) return 'halloween';      // Aug–Oct
+  if (m === 10 || (m === 11 && d <= 23)) return 'christmas';  // Nov–22 Dec
+  return null;
 }
 
 function estimateCrowd(date, park) {
@@ -1859,7 +1899,7 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
   const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport });
   const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
-  const partyNight = park === 'Magic Kingdom' && isPartyNight(date);
+  const partyNight = park === 'Magic Kingdom' ? partyKind(date) : null; // 'halloween' | 'christmas' | null
   const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort, partyNight });
 
   return { headline, morning, afternoon, evening };
@@ -1978,7 +2018,10 @@ function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEven
     return "You're heading out before the closing show. Focus on rides you want to repeat — queues drop in the final 30 minutes.";
   }
   if (park === 'Magic Kingdom') {
-    if (partyNight) return "Tonight is a Halloween Party night — the park closes to day-ticket guests at 6pm and the regular fireworks don't run. Be out by 6, or you'll need a separate party ticket. Save the fireworks for another evening.";
+    if (partyNight) {
+      const name = partyNight === 'christmas' ? 'Christmas Party' : 'Halloween Party';
+      return `Tonight is a ${name} night — the park closes to day-ticket guests at 6pm and the regular fireworks don't run. Be out by 6, or you'll need a separate party ticket. Save the fireworks for another evening.`;
+    }
     return lateEvenings || ropeDrop ? "Stay for Happily Ever After fireworks — book a viewing spot 60-90 minutes early on the hub grass." : "Watch fireworks if you can.";
   }
   if (park === 'Hollywood Studios') return lateEvenings ? "Fantasmic at 8pm or 9pm — get there 45 minutes early." : "Ride Rise of the Resistance or Tower of Terror in the last hour.";
@@ -2081,8 +2124,13 @@ function detectFlag(park, dayIndex, totalDays, a, date) {
   if (!date) return null;
   const month = date.getMonth();
   const dow = date.getDay();
-  if (park === 'Magic Kingdom' && isPartyNight(date)) {
-    return "Halloween Party night — MK closes early to day guests, no regular fireworks";
+  if (park === 'Magic Kingdom') {
+    const kind = partyKind(date);
+    if (kind === 'christmas') return "Christmas Party night — MK closes early to day guests, no regular fireworks";
+    if (kind === 'halloween') return "Halloween Party night — MK closes early to day guests, no regular fireworks";
+    const pending = pendingPartySeason(date);
+    if (pending === 'christmas') return "Christmas Party season — exact dates not published yet, check back";
+    if (pending === 'halloween') return "Halloween Party season — exact dates not published yet, check back";
   }
   if (park === 'EPCOT') {
     if (month >= 0 && month <= 1) return 'Festival of the Arts is on';
