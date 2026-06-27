@@ -59,6 +59,17 @@ function track(event, properties = {}) {
   } catch { /* never throw from analytics */ }
 }
 
+// ---- The Wished star ----
+// The four-point gold star is Wished's brand signal — it always means "Wished's hand in the
+// plan": collected (progress), recommended (its picks), or granted (success). Never decoration.
+function WishStar({ size = 14, color = '#9a7b2e', className = '', style }) {
+  return (
+    <svg width={size} height={size} viewBox="-8 -8 16 16" className={className} style={style} aria-hidden="true">
+      <path d="M0,-7 L1.7,-1.7 L7,0 L1.7,1.7 L0,7 L-1.7,1.7 L-7,0 L-1.7,-1.7 Z" fill={color} />
+    </svg>
+  );
+}
+
 export default function DisneyPlanner() {
   const [step, setStep] = useState(0);
   const [pinnedDays, setPinnedDays] = useState({});
@@ -217,12 +228,14 @@ export default function DisneyPlanner() {
         </header>
 
         {step > 0 && step <= totalSteps && (
-          <div className="flex gap-1 mb-12">
+          <div className="flex items-center justify-between mb-12 px-0.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
+              <WishStar
                 key={i}
-                className="h-0.5 flex-1 transition-all duration-500"
-                style={{ background: i < step ? '#1c1917' : '#d6d3d1' }}
+                size={14}
+                color={i < step ? '#9a7b2e' : '#d8d1c2'}
+                className="transition-all duration-500"
+                style={{ transform: i === step - 1 ? 'scale(1.25)' : 'scale(1)' }}
               />
             ))}
           </div>
