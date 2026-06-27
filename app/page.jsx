@@ -775,6 +775,7 @@ function RidesStep({ value, onChange }) {
     'Magic Kingdom': [
       { id: 'tron', label: 'Tron Lightcycle / Run' },
       { id: 'sevendwarfs', label: 'Seven Dwarfs Mine Train' },
+      { id: 'tiana', label: "Tiana's Bayou Adventure" },
       { id: 'spacemountain', label: 'Space Mountain' },
       { id: 'bigthunder', label: 'Big Thunder Mountain' },
       { id: 'haunted', label: 'Haunted Mansion' },
@@ -1281,7 +1282,21 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
-      <div className="flex justify-center pt-4 pb-8 no-print">
+      <div className="flex flex-wrap justify-center gap-3 pt-4 pb-8 no-print">
+        <button
+          onClick={copyLink}
+          className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e', border: '1px solid #d9c89a', background: '#f9f6ef' }}
+        >
+          {copied ? <><Check size={14} /> Link copied</> : <><Copy size={14} /> Copy link</>}
+        </button>
+        <button
+          onClick={printPlan}
+          className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e', border: '1px solid #d9c89a', background: '#f9f6ef' }}
+        >
+          <Printer size={14} /> Print / Save PDF
+        </button>
         <button
           onClick={onReset}
           className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
@@ -1386,9 +1401,31 @@ function isResortSkyliner(resortName) {
   return RESORTS[resortName]?.skyliner === true;
 }
 
+// On a partial arrival (anything after late morning), the arrival day is only a half/evening
+// at the park. Magic Kingdom shouldn't be that park for a first-timer — it's the centrepiece
+// and deserves a full day, ideally first. If MK has landed on the arrival day, swap it with a
+// later full park day (preferring EPCOT, which is ideal for an arrival-evening around World
+// Showcase). Respects a user who has deliberately pinned MK to day 0.
+function keepMKOffArrivalDay(sequence, a, pinnedDays = {}) {
+  const arrival = a.arrival || 'morning';
+  if (arrival === 'morning' || arrival === 'night') return; // full-day, or no park at all on arrival
+  if (a.experience === 'returning') return;                 // first-timers only
+  if (pinnedDays && pinnedDays[0] !== undefined) return;    // user explicitly chose day 0
+  if (sequence[0] !== 'Magic Kingdom') return;
+  // Prefer EPCOT for an arrival evening (World Showcase is ideal after dark), then Hollywood
+  // Studios; Animal Kingdom last since it closes early and makes a weak evening.
+  let swapIdx = sequence.findIndex((p, i) => i > 0 && p === 'EPCOT');
+  if (swapIdx === -1) swapIdx = sequence.findIndex((p, i) => i > 0 && p === 'Hollywood Studios');
+  if (swapIdx === -1) swapIdx = sequence.findIndex((p, i) => i > 0 && p === 'Animal Kingdom');
+  if (swapIdx > 0) {
+    [sequence[0], sequence[swapIdx]] = [sequence[swapIdx], sequence[0]];
+  }
+}
+
 function generateStubDays(a, pinnedDays = {}) {
   const allocation = allocateParks(a, pinnedDays);
   const sequence = sequenceParks(allocation, a, pinnedDays);
+  keepMKOffArrivalDay(sequence, a, pinnedDays); // first-timers: MK earns a full day, not a half-day arrival
   const mkBump = allocation._mkBump || { bumped: false };
   const hasTravelDay = allocation.includes('Travel day');
   const visitCounts = {};
@@ -2198,6 +2235,7 @@ function getRopeDropTargets(park, wantedRides) {
     'Magic Kingdom': [
       { id: 'sevendwarfs', name: 'Seven Dwarfs Mine Train' },
       { id: 'tron', name: 'Tron Lightcycle' },
+      { id: 'tiana', name: "Tiana's Bayou Adventure" },
       { id: 'peterpan', name: "Peter Pan's Flight" },
       { id: 'spacemountain', name: 'Space Mountain' },
     ],
@@ -2229,6 +2267,7 @@ function getLLTargets(park, wantedRides) {
     'Magic Kingdom': [
       { id: 'sevendwarfs', name: 'Seven Dwarfs (Single Pass)' },
       { id: 'tron', name: 'Tron (Single Pass)' },
+      { id: 'tiana', name: "Tiana's Bayou Adventure" },
       { id: 'peterpan', name: "Peter Pan's Flight" },
       { id: 'bigthunder', name: 'Big Thunder Mountain' },
       { id: 'spacemountain', name: 'Space Mountain' },
