@@ -298,10 +298,13 @@ function Intro({ onStart }) {
           Wish it.<br />We'll plan<br />the rest.
         </h1>
         <p className="text-lg text-stone-700 max-w-xl leading-relaxed">
-          Thirteen questions. A tailored strategy — which parks on which days,
-          where to stay, how to handle Lightning Lane, and what to book before
-          you go. No hourly schedules. Just a plan that makes sense for the
-          people you're going with.
+          Answer thirteen quick questions and get a personalised Walt Disney World
+          strategy — which parks on which days, where to stay, how to handle Lightning
+          Lane, and what to book before you travel. No spreadsheets, no hour-by-hour
+          itineraries. Just a plan built around your family.
+        </p>
+        <p className="text-xl md:text-2xl text-stone-800 italic leading-snug max-w-xl" style={{ fontFamily: 'Georgia, serif' }}>
+          Most Disney tools hand every family the same answer. Wished is built around yours.
         </p>
         <button
           onClick={onStart}
@@ -314,9 +317,12 @@ function Intro({ onStart }) {
         >
           Build my plan →
         </button>
-        <p className="text-xs text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-          Free. No sign-up. Takes about four minutes.
-        </p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs tracking-[0.12em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> Free</span>
+          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> No sign-up</span>
+          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> About four minutes</span>
+          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> Updated for 2026</span>
+        </div>
       </div>
 
       <div className="border-t border-stone-300 pt-16 mb-24">
@@ -335,6 +341,24 @@ function Intro({ onStart }) {
           happening that week — they all change the right answer. This tool
           works through them and tells you what to do.
         </p>
+      </div>
+
+      <div className="border-t border-stone-300 pt-16 mb-24">
+        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+          Every recommendation considers
+        </div>
+        <p className="text-stone-700 max-w-2xl leading-relaxed mb-8">
+          This isn't a list of tips you have to assemble yourself. It's a plan that weighs
+          everything that actually changes the right answer:
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3 max-w-2xl">
+          {['Your resort', 'Party ages', 'Park Hopper', 'Crowd forecasts', 'Events that week', 'Lightning Lane', 'Budget', 'Rest days', 'Ride priorities'].map(item => (
+            <div key={item} className="flex items-center gap-2 text-stone-700">
+              <Check size={14} style={{ color: '#9a7b2e' }} />
+              <span style={{ fontFamily: 'Georgia, serif' }}>{item}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="border-t border-stone-300 pt-16 mb-24">
