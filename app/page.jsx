@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, Calendar, Users, Sparkles, Hotel, Zap, Clock, Gauge, Compass, RotateCcw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Calendar, Users, Sparkles, Hotel, Zap, Clock, Gauge, Compass, RotateCcw, Copy, Printer, Check } from 'lucide-react';
 
 // ---- Lightweight, cookieless analytics ----
 // Anonymous funnel + completion tracking. No SDK, no cookies, no storage: a per-load
@@ -15,6 +15,26 @@ const ANALYTICS_ID = (() => {
   try { return crypto.randomUUID(); }
   catch { return 'anon-' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
 })();
+// ---- Shareable plan links ----
+// The whole plan is generated from the answers, so we never need a database: we pack the
+// answers (and any pinned days) into the URL itself. A shared link reopens the exact same
+// plan on any device — no login, no backend, no cost.
+function encodePlan(answers, pinnedDays) {
+  try {
+    const json = JSON.stringify({ v: 1, a: answers, p: pinnedDays || {} });
+    return btoa(unescape(encodeURIComponent(json)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch { return ''; }
+}
+function decodePlan(token) {
+  try {
+    const b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (!data || data.v !== 1 || !data.a) return null;
+    return { answers: data.a, pinnedDays: data.p || {} };
+  } catch { return null; }
+}
+
 const STEP_NAMES = {
   1: 'dates', 2: 'party', 3: 'days', 4: 'experience', 5: 'intensity', 6: 'rhythm',
   7: 'property', 8: 'lightning', 9: 'dining', 10: 'rides', 11: 'extras', 12: 'rest_days', 13: 'water_park',
@@ -72,6 +92,19 @@ export default function DisneyPlanner() {
   // ---- Analytics: landing view + completion ----
   const planFiredRef = useRef(false);
   useEffect(() => { track('landing_viewed'); }, []); // once per session
+  // Reopen a shared plan: if the URL carries ?plan=, decode it and jump straight to the plan.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = new URLSearchParams(window.location.search).get('plan');
+    if (!token) return;
+    const decoded = decodePlan(token);
+    if (!decoded) return;
+    setAnswers(decoded.answers);
+    setPinnedDays(decoded.pinnedDays);
+    planFiredRef.current = true; // a reopened link isn't a fresh build — don't double-count it
+    setStep(14);
+    track('plan_opened_from_link');
+  }, []);
   useEffect(() => {
     if (step !== 14 || planFiredRef.current) return;
     planFiredRef.current = true; // count each genuine build once (reset() re-arms it)
@@ -155,12 +188,12 @@ export default function DisneyPlanner() {
   };
 
   return (
-    <div className="min-h-screen w-full" style={{
+    <div id="wished-root" className="min-h-screen w-full" style={{
       background: 'linear-gradient(180deg, #f4f1ea 0%, #ebe5d8 100%)',
       fontFamily: 'Georgia, "Times New Roman", serif',
     }}>
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        <header className="mb-16">
+        <header className="mb-16 no-print">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
             <div className="text-sm tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
               Wished
@@ -171,14 +204,11 @@ export default function DisneyPlanner() {
               </div>
             ) : (
               <nav className="flex items-center gap-5 flex-wrap">
-                <a href="/fireworks" style={{ textDecoration: 'none' }}>
-                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>Fireworks</span>
+                <a href="/guides" style={{ textDecoration: 'none' }}>
+                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>Guides</span>
                 </a>
-                <a href="/lightning-lane" style={{ textDecoration: 'none' }}>
-                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>Lightning Lane</span>
-                </a>
-                <a href="/what-to-pack" style={{ textDecoration: 'none' }}>
-                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>What to Pack</span>
+                <a href="/about" style={{ textDecoration: 'none' }}>
+                  <span className="text-xs tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#78716c' }}>About</span>
                 </a>
               </nav>
             )}
@@ -998,19 +1028,58 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
     setEditingDay(null);
   };
 
+  const [copied, setCopied] = useState(false);
+  const copyLink = async () => {
+    const token = encodePlan(answers, pinnedDays);
+    const url = `${window.location.origin}/?plan=${token}`;
+    try { await navigator.clipboard.writeText(url); } catch { /* clipboard blocked — address bar still updates below */ }
+    try { window.history.replaceState(null, '', `/?plan=${token}`); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+    track('plan_link_copied');
+  };
+  const printPlan = () => {
+    track('plan_printed');
+    expandAll();                                  // open every day so the whole plan prints
+    setTimeout(() => window.print(), 200);
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300">
+      <style>{`
+        @media print {
+          #wished-root { background: #ffffff !important; }
+          .no-print { display: none !important; }
+          .plan-day { break-inside: avoid; page-break-inside: avoid; }
+        }
+      `}</style>
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300 no-print">
         <div className="text-xs tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
           Wished
         </div>
-        <button
-          onClick={onReset}
-          className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
-          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-        >
-          <RotateCcw size={13} /> Start a new plan
-        </button>
+        <div className="flex items-center gap-4 flex-wrap">
+          <button
+            onClick={copyLink}
+            className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          >
+            {copied ? <><Check size={13} /> Link copied</> : <><Copy size={13} /> Copy link</>}
+          </button>
+          <button
+            onClick={printPlan}
+            className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          >
+            <Printer size={13} /> Print / Save PDF
+          </button>
+          <button
+            onClick={onReset}
+            className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          >
+            <RotateCcw size={13} /> Start a new plan
+          </button>
+        </div>
       </div>
       <div className="mb-12">
         <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
@@ -1048,7 +1117,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
             const priority = generateDayPriority(d, i, days.length, answers);
             const dailyTip = generateDayTip(d, i, answers);
             return (
-              <div key={i} className="border border-stone-200 bg-stone-50/40">
+              <div key={i} className="plan-day border border-stone-200 bg-stone-50/40">
                 {/* Always-visible summary row — tap to expand */}
                 <button
                   onClick={() => toggleExpand(i)}
@@ -1212,7 +1281,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
-      <div className="flex justify-center pt-4 pb-8">
+      <div className="flex justify-center pt-4 pb-8 no-print">
         <button
           onClick={onReset}
           className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
