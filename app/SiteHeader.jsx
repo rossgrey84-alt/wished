@@ -7,6 +7,7 @@ export default function SiteHeader({ active }) {
     { href: "/fireworks", label: "Fireworks" },
     { href: "/lightning-lane", label: "Lightning Lane" },
     { href: "/what-to-pack", label: "What to Pack" },
+    { href: "/about", label: "About" },
   ];
   return (
     <header className="mb-12">
