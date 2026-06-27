@@ -1051,6 +1051,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         @media print {
           #wished-root { background: #ffffff !important; }
           .no-print { display: none !important; }
+          .plan-summary { break-after: page; page-break-after: always; }
           .plan-day { break-inside: avoid; page-break-inside: avoid; }
         }
       `}</style>
@@ -1094,6 +1095,39 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </p>
       </div>
 
+      {/* One-page summary — the whole trip at a glance (also page one of the printed PDF) */}
+      <div className="plan-summary mb-12">
+        <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+          At a glance
+        </div>
+        <div className="border border-stone-200 bg-stone-50/40">
+          {days.map((d, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setExpandedDays(prev => ({ ...prev, [i]: true }));
+                if (typeof document !== 'undefined') {
+                  const el = document.getElementById(`day-${i}`);
+                  if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+                }
+              }}
+              className={`w-full text-left flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 hover:bg-stone-100/60 transition-colors ${i > 0 ? 'border-t border-stone-200' : ''}`}
+            >
+              <span className="text-xs tracking-[0.18em] uppercase text-stone-500 w-16 sm:w-20 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                Day {i + 1}
+              </span>
+              <span className="text-xs tracking-[0.12em] uppercase text-stone-400 w-24 shrink-0 hidden sm:block" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
+              </span>
+              <span className="flex-1 text-stone-900 italic leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
+                {d.park}
+              </span>
+              {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="flex items-center justify-between mb-8">
           <div className="text-xs tracking-[0.3em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
@@ -1118,7 +1152,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
             const priority = generateDayPriority(d, i, days.length, answers);
             const dailyTip = generateDayTip(d, i, answers);
             return (
-              <div key={i} className="plan-day border border-stone-200 bg-stone-50/40">
+              <div key={i} id={`day-${i}`} className="plan-day border border-stone-200 bg-stone-50/40">
                 {/* Always-visible summary row — tap to expand */}
                 <button
                   onClick={() => toggleExpand(i)}
