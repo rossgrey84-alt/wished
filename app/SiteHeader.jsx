@@ -4,9 +4,7 @@ import Link from "next/link";
 export default function SiteHeader({ active }) {
   const links = [
     { href: "/", label: "Planner" },
-    { href: "/fireworks", label: "Fireworks" },
-    { href: "/lightning-lane", label: "Lightning Lane" },
-    { href: "/what-to-pack", label: "What to Pack" },
+    { href: "/guides", label: "Guides" },
     { href: "/about", label: "About" },
   ];
   return (
