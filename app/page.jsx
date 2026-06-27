@@ -1178,15 +1178,11 @@ function checkPinWarning(dayIdx, pinnedPark, day, a) {
     return `${pinnedPark} on this day looks busy (crowd level ${crowd}/10). Another day in your window would likely be quieter — but if the date is locked for a specific reason like Fantasmic or a dining reservation, this is fine.`;
   }
 
-  // Halloween/Christmas party warning for Magic Kingdom
-  if (pinnedPark === 'Magic Kingdom' && dow !== null) {
-    const month = day.date.getMonth();
-    if ((month === 7 || month === 8 || month === 9) && [0, 1, 3, 4, 5].includes(dow)) {
-      return `This date is likely a Halloween Party night — Magic Kingdom may close to day-ticket guests at 6pm. Verify the date or you'll lose the evening.`;
-    }
-    if (month === 10 && [0, 1, 2, 4, 5].includes(dow)) {
-      return `This date is likely a Christmas Party night — Magic Kingdom may close to day-ticket guests at 6pm.`;
-    }
+  // Halloween party warning for Magic Kingdom — driven by the real MNSSHP calendar,
+  // not a day-of-week guess. Only fires on an actual party night.
+  if (pinnedPark === 'Magic Kingdom' && day.date && isPartyNight(day.date)) {
+    const nice = day.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    return `${nice} is a Mickey's Not-So-Scary Halloween Party night — Magic Kingdom closes to day-ticket guests at 6pm and the regular fireworks don't run. Move Magic Kingdom to another evening in your window, or treat this as a half-day and be out by 6.`;
   }
 
   // Rest day in a weird position
@@ -1285,6 +1281,36 @@ function getDateForDay(startStr, dayIndex) {
   const d = new Date(startStr);
   d.setDate(d.getDate() + dayIndex);
   return d;
+}
+
+// ---- Special-event calendar (HARD-CODED, 2026 ONLY) ----
+// MNSSHP = Mickey's Not-So-Scary Halloween Party. On these nights Magic Kingdom closes
+// early to day-ticket guests (~6pm) and the standard fireworks (Happily Ever After) do
+// not run. So: a first-timer's MK day must never anchor on one, and we never recommend
+// MK fireworks on one.
+// ⚠️ ANNUAL REFRESH: these dates go stale the moment Disney publishes 2027 party nights.
+// Update this set each year (or replace with a real data source) or the tool quietly
+// gives wrong MK guidance.
+// NOTE: Christmas party (MVMCP, Nov–Dec) is NOT encoded — no real dates wired yet.
+const MNSSHP_2026 = new Set([
+  '2026-08-07', '2026-08-11', '2026-08-14', '2026-08-18', '2026-08-21', '2026-08-23', '2026-08-25', '2026-08-28', '2026-08-30',
+  '2026-09-01', '2026-09-04', '2026-09-08', '2026-09-11', '2026-09-15', '2026-09-18', '2026-09-20', '2026-09-22', '2026-09-24', '2026-09-25', '2026-09-27', '2026-09-29',
+  '2026-10-01', '2026-10-02', '2026-10-04', '2026-10-06', '2026-10-08', '2026-10-09', '2026-10-13', '2026-10-15', '2026-10-16', '2026-10-18', '2026-10-22', '2026-10-23', '2026-10-25', '2026-10-27', '2026-10-29',
+]);
+
+// Local-time YYYY-MM-DD key — matches how estimateCrowd/detectFlag read dates with
+// getMonth()/getDate(), and avoids the toISOString() UTC off-by-one.
+function dateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// Is this date a Magic Kingdom MNSSHP party night? (2026 only.)
+function isPartyNight(date) {
+  if (!date) return false;
+  return MNSSHP_2026.has(dateKey(date));
 }
 
 function estimateCrowd(date, park) {
@@ -1534,10 +1560,18 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
     const earliestFullDay = morningArrival ? 0 : 1;
 
     let firstFullDay = -1;
+    let firstPartyFallback = -1;
     for (let i = earliestFullDay; i < numDays; i++) {
       if (sequence[i] === 'Travel day') continue;
-      if (sequence[i] === null) { firstFullDay = i; break; }
+      if (sequence[i] !== null) continue;
+      // Never anchor a first-timer's MK full day on an MNSSHP party night — the park
+      // closes early to day guests and the fireworks don't run. Remember it as a last-
+      // resort fallback only if every open day turns out to be a party night.
+      if (isPartyNight(dates[i])) { if (firstPartyFallback === -1) firstPartyFallback = i; continue; }
+      firstFullDay = i;
+      break;
     }
+    if (firstFullDay === -1) firstFullDay = firstPartyFallback;
     if (firstFullDay >= 0) {
       const mkCrowd = estimateCrowd(dates[firstFullDay], 'Magic Kingdom') || 5;
       const EXTREME = 9; // crowd 9-10 = holiday-level spike (July 4th, Christmas week, etc.)
@@ -1546,6 +1580,7 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
         let best = firstFullDay, bestCrowd = mkCrowd;
         for (let i = earliestFullDay; i < numDays; i++) {
           if (sequence[i] !== null) continue;
+          if (isPartyNight(dates[i])) continue; // don't bump MK onto a party night either
           const c = estimateCrowd(dates[i], 'Magic Kingdom') || 5;
           if (c < bestCrowd - 1) { best = i; bestCrowd = c; }
         }
@@ -1824,7 +1859,8 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
   const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport });
   const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
-  const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort });
+  const partyNight = park === 'Magic Kingdom' && isPartyNight(date);
+  const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort, partyNight });
 
   return { headline, morning, afternoon, evening };
 }
@@ -1917,7 +1953,7 @@ function buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useL
   return "";
 }
 
-function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort }) {
+function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper, resort, partyNight }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return `Evening at ${park}. Pick one or two headliners on standby — or a single Lightning Lane Single Pass if there's one ride you can't miss. Not worth Multi Pass for a few hours.`;
     if (arrival === 'midday') return "Stay through to closing if you can.";
@@ -1941,7 +1977,10 @@ function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEven
     if (park === 'Animal Kingdom') return "Park closes earlier here anyway — you're out by 7 or 8.";
     return "You're heading out before the closing show. Focus on rides you want to repeat — queues drop in the final 30 minutes.";
   }
-  if (park === 'Magic Kingdom') return lateEvenings || ropeDrop ? "Stay for Happily Ever After fireworks — book a viewing spot 60-90 minutes early on the hub grass." : "Watch fireworks if you can.";
+  if (park === 'Magic Kingdom') {
+    if (partyNight) return "Tonight is a Halloween Party night — the park closes to day-ticket guests at 6pm and the regular fireworks don't run. Be out by 6, or you'll need a separate party ticket. Save the fireworks for another evening.";
+    return lateEvenings || ropeDrop ? "Stay for Happily Ever After fireworks — book a viewing spot 60-90 minutes early on the hub grass." : "Watch fireworks if you can.";
+  }
   if (park === 'Hollywood Studios') return lateEvenings ? "Fantasmic at 8pm or 9pm — get there 45 minutes early." : "Ride Rise of the Resistance or Tower of Terror in the last hour.";
   if (park === 'EPCOT') return lateEvenings ? "Eat your way around World Showcase. Stay for the lagoon show." : "World Showcase is the dinner.";
   if (park === 'Animal Kingdom') return "Park closes early — by the time you'd think about evenings here, you're done.";
@@ -2042,11 +2081,8 @@ function detectFlag(park, dayIndex, totalDays, a, date) {
   if (!date) return null;
   const month = date.getMonth();
   const dow = date.getDay();
-  if (park === 'Magic Kingdom' && (month === 7 || month === 8 || month === 9)) {
-    if ([0, 1, 3, 4, 5].includes(dow)) return "Likely Halloween Party night — verify and reshape this day";
-  }
-  if (park === 'Magic Kingdom' && month === 10 && [0, 1, 2, 4, 5].includes(dow)) {
-    return "Likely Christmas Party night — verify and reshape this day";
+  if (park === 'Magic Kingdom' && isPartyNight(date)) {
+    return "Halloween Party night — MK closes early to day guests, no regular fireworks";
   }
   if (park === 'EPCOT') {
     if (month >= 0 && month <= 1) return 'Festival of the Arts is on';
