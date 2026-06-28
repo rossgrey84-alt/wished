@@ -70,8 +70,34 @@ function WishStar({ size = 14, color = '#9a7b2e', className = '', style }) {
   );
 }
 
+// A single honest beat before the reveal — not a fake "analysing..." sequence. The plan is
+// already computed; this is a moment of occasion, not simulated thinking.
+function RevealPause() {
+  return (
+    <div className="min-h-[46vh] flex flex-col items-center justify-center text-center">
+      <style>{`
+        @keyframes wishReveal {
+          0%   { transform: scale(0.5) rotate(-60deg); opacity: 0; }
+          60%  { opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes wishGlow { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
+        .wish-reveal-star { animation: wishReveal 1.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .wish-reveal-label { animation: wishGlow 2s ease-in-out infinite; }
+      `}</style>
+      <div className="wish-reveal-star mb-7">
+        <WishStar size={54} color="#9a7b2e" />
+      </div>
+      <div className="wish-reveal-label text-sm tracking-[0.35em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        Building your strategy
+      </div>
+    </div>
+  );
+}
+
 export default function DisneyPlanner() {
   const [step, setStep] = useState(0);
+  const [revealing, setRevealing] = useState(false);
   const [pinnedDays, setPinnedDays] = useState({});
   const [editingDay, setEditingDay] = useState(null);
   const [answers, setAnswers] = useState({
@@ -147,6 +173,10 @@ export default function DisneyPlanner() {
   const next = () => {
     if (step === 0) track('questionnaire_started');
     else if (step >= 1 && step <= totalSteps) track('step_completed', { step, step_name: STEP_NAMES[step] });
+    if (step === totalSteps) {
+      setRevealing(true);
+      setTimeout(() => setRevealing(false), 1600);
+    }
     setStep(s => Math.min(s + 1, totalSteps + 1));
   };
   const back = () => {
@@ -228,16 +258,26 @@ export default function DisneyPlanner() {
         </header>
 
         {step > 0 && step <= totalSteps && (
-          <div className="flex items-center justify-between mb-12 px-0.5">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <WishStar
-                key={i}
-                size={14}
-                color={i < step ? '#9a7b2e' : '#d8d1c2'}
-                className="transition-all duration-500"
-                style={{ transform: i === step - 1 ? 'scale(1.25)' : 'scale(1)' }}
-              />
-            ))}
+          <div className="mb-12">
+            <div className="text-xs tracking-[0.3em] uppercase mb-4 text-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+              Building your plan
+            </div>
+            <div className="flex items-center justify-between px-0.5">
+              {Array.from({ length: totalSteps }).map((_, i) => (
+                <WishStar
+                  key={i}
+                  size={14}
+                  color={i < step ? '#9a7b2e' : '#d8d1c2'}
+                  className="transition-all duration-500"
+                  style={{ transform: i === step - 1 ? 'scale(1.25)' : 'scale(1)' }}
+                />
+              ))}
+            </div>
+            {step === 1 && (
+              <p className="text-base text-stone-500 text-center mt-5 italic" style={{ fontFamily: 'Georgia, serif' }}>
+                A few quick questions, so the plan is genuinely yours. There are no wrong answers.
+              </p>
+            )}
           </div>
         )}
 
@@ -268,7 +308,8 @@ export default function DisneyPlanner() {
               if (answers.waterParkInterest === null) update('waterParkInterest', 'no');
             }}
           />}
-          {step === 14 && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
+          {step === 14 && revealing && <RevealPause />}
+          {step === 14 && !revealing && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
         </div>
 
         {step > 0 && step <= totalSteps && (
@@ -621,7 +662,7 @@ function PartyStep({ party, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Users} eyebrow="Question 2" title="Who's going?" sub="Ages drive ride access, height restrictions, pace, and how we handle Rider Swap if some of you do thrills and others don't." />
+      <StepHeader icon={Users} eyebrow="Question 2" title="Who's travelling with you?" sub="Ages drive ride access, height restrictions, pace, and how we handle Rider Swap if some of you do thrills and others don't." />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {groups.map(g => (
           <Counter key={g.key} label={g.label} sub={g.sub} value={party[g.key]} onChange={v => onChange(g.key, v)} />
@@ -684,7 +725,7 @@ function ExperienceStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Compass} eyebrow="Question 4" title="First trip or returning?" sub="This changes everything about prioritisation." />
+      <StepHeader icon={Compass} eyebrow="Question 4" title="First trip, or have you been before?" sub="This changes everything about prioritisation." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -701,7 +742,7 @@ function IntensityStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Gauge} eyebrow="Question 5" title="How much thrill?" sub="Be honest — this drives which parks get more time and how we sequence the day." />
+      <StepHeader icon={Gauge} eyebrow="Question 5" title="How much thrill are you after?" sub="Be honest — this drives which parks get more time and how we sequence the day." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -719,7 +760,7 @@ function RhythmStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 6" title="What's your park rhythm?" sub="Long days drain young kids. Late starts waste cool morning hours. There's no right answer — just yours." />
+      <StepHeader icon={Sparkles} eyebrow="Question 6" title="What does your ideal park day look like?" sub="Long days drain young kids. Late starts waste cool morning hours. There's no right answer — just yours." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -782,7 +823,7 @@ function LightningStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Zap} eyebrow="Question 8" title="Lightning Lane?" sub="Disney's paid line-skip system. Multi Pass bundles regular rides; Single Pass buys the top headliners individually (Tron, Rise of the Resistance, Flight of Passage). Most experienced parties pay selectively, not always." />
+      <StepHeader icon={Zap} eyebrow="Question 8" title="How do you feel about skipping the lines?" sub="Disney's paid line-skip system. Multi Pass bundles regular rides; Single Pass buys the top headliners individually (Tron, Rise of the Resistance, Flight of Passage). Most experienced parties pay selectively, not always." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -848,7 +889,7 @@ function RidesStep({ value, onChange }) {
 
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 10" title="Which rides do you actually want?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
+      <StepHeader icon={Sparkles} eyebrow="Question 10" title="Which rides would you hate to miss?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
       <div className="space-y-6">
         {Object.entries(ridesByPark).map(([park, rides]) => (
           <div key={park}>
@@ -924,7 +965,7 @@ function RestDaysStep({ restDays, restDayType, onRestDays, onRestDayType }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 12" title="Rest days?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
+      <StepHeader icon={Sparkles} eyebrow="Question 12" title="How do you like to recharge?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
       <div className={restDays && restDays !== 'none' ? 'mb-10' : ''}>
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Do you want rest days built in?</div>
         <div className="space-y-3">
@@ -1131,6 +1172,29 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           {generateSummary(answers, days)}
         </p>
       </div>
+
+      {(() => {
+        const strategy = generateStrategy(answers, days);
+        if (!strategy.length) return null;
+        return (
+          <div className="mb-16">
+            <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+              The calls we've made
+            </div>
+            <div className="space-y-6">
+              {strategy.map((s, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="shrink-0 mt-1.5"><WishStar size={16} /></div>
+                  <div>
+                    <div className="text-xl md:text-2xl text-stone-900 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>{s.decision}</div>
+                    <p className="text-stone-600 leading-relaxed mt-1.5 max-w-xl">{s.why}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* One-page summary — the whole trip at a glance (also page one of the printed PDF) */}
       <div className="plan-summary mb-12">
@@ -2406,6 +2470,95 @@ function generateHeadline(a) {
   } else if (teens > 0 && adults > 0) party = `a party of ${total} with teenagers`;
   else party = `a party of ${total}`;
   return `A ${numDays}-day plan for ${party}.`;
+}
+
+// The reveal. Surfaces the decisions the engine actually made as plain strategy statements,
+// each with a real why. Every line here is derived from the generated plan or the answers —
+// never invented. If a reason isn't genuinely the engine's reason, it doesn't get said.
+function generateStrategy(a, days) {
+  const PARKS = ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'];
+  const isPark = (p) => PARKS.includes(p);
+  const wd = (d) => (d && d.date) ? d.date.toLocaleDateString('en-GB', { weekday: 'long' }) : null;
+  const numDays = days.length;
+  const parkDays = days.filter(d => isPark(d.park));
+  if (!parkDays.length) return [];
+  const firstPark = days.find(d => isPark(d.park));
+  const firstParkIdx = days.findIndex(d => isPark(d.park));
+  const mkDay = days.find(d => d.park === 'Magic Kingdom');
+  const llDays = days.filter(d => d.llmp === true);
+  const restDay = days.find(d => d.park === 'Rest day');
+  const peakDay = parkDays.reduce((m, d) => (d.crowd || 0) > (m.crowd || 0) ? d : m, parkDays[0]);
+  const out = [];
+
+  // 1. Opening move
+  if (firstPark) {
+    let why;
+    if (firstPark.park === 'EPCOT' && mkDay && mkDay !== firstPark) {
+      why = "World Showcase is at its best in the evening, so it's a calm, scenic opener — and it lets Magic Kingdom wait for a full day.";
+    } else if (firstParkIdx === 0 && (a.arrival === 'evening' || a.arrival === 'midday')) {
+      why = "It eases you in on a partial arrival day, without spending your highest-energy hours on the biggest park.";
+    } else {
+      why = "It's matched to the quietest start in your window, so you begin on a calmer day rather than a busy one.";
+    }
+    out.push({ decision: `Start at ${firstPark.park}.`, why });
+  }
+
+  // 2. Magic Kingdom placement (only when MK isn't already the opener)
+  if (mkDay && mkDay !== firstPark && wd(mkDay)) {
+    out.push({
+      decision: `Save Magic Kingdom for ${wd(mkDay)}.`,
+      why: "It's the most ground you'll cover in a day, so it sits on a lower-crowd day — you don't want the park and the queues working against you at once.",
+    });
+  }
+
+  // 3. Lightning Lane — phrased by what the engine actually recommends
+  if (a.lightning === 'none') {
+    out.push({
+      decision: "Skip Lightning Lane — lean on rope drop instead.",
+      why: "You'd rather not pay for it, so the plan front-loads the headliners into the first hour, when the queues are shortest anyway.",
+    });
+  } else if (llDays.length === 0) {
+    out.push({
+      decision: "Don't buy Lightning Lane this trip.",
+      why: "Your week is quiet enough that an early start covers the big rides — keep the money.",
+    });
+  } else if (a.lightning === 'always') {
+    const heavy = llDays.filter(d => (d.crowd || 0) >= 6);
+    const focus = heavy.length ? heavy : llDays;
+    const parks = [...new Set(focus.map(d => d.park))].join(' and ');
+    out.push({
+      decision: "You're buying Lightning Lane daily — spend it where it counts.",
+      why: `It earns its keep most on ${parks}; on the quieter days you'd be fine without it.`,
+    });
+  } else {
+    const dayList = llDays.map(d => wd(d)).filter(Boolean);
+    const parks = [...new Set(llDays.map(d => d.park))];
+    const dayPhrase = dayList.length === 1
+      ? dayList[0]
+      : dayList.slice(0, -1).join(', ') + ' and ' + dayList[dayList.length - 1];
+    out.push({
+      decision: `Buy Lightning Lane on ${dayPhrase} — skip it the rest.`,
+      why: `On ${parks.join(' and ')} the crowds and ride layout earn it back; elsewhere rope drop gets you the same rides for free.`,
+    });
+  }
+
+  // 4. Rest day
+  if (restDay && wd(restDay)) {
+    out.push({
+      decision: `Take ${wd(restDay)} as a resort day.`,
+      why: `On a ${numDays}-day trip, one planned breather is the difference between finishing strong and limping to the end.`,
+    });
+  }
+
+  // 5. Toughest day
+  if (peakDay && (peakDay.crowd || 0) >= 7 && peakDay !== firstPark && wd(peakDay)) {
+    out.push({
+      decision: `Be at the gate before opening on ${wd(peakDay)}.`,
+      why: `${peakDay.park} is your busiest forecast — the first hour there is worth three in the afternoon.`,
+    });
+  }
+
+  return out.slice(0, 5);
 }
 
 function generateSummary(a, days) {
