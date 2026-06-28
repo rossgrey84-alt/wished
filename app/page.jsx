@@ -1205,10 +1205,11 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         <div className="text-xs tracking-[0.4em] uppercase mb-5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           At a glance
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {days.map((d, i) => {
             const s = daySlots(d, answers, i, days.length);
             const rows = [['AM', s.am], ['MID', s.mid], ['EVE', s.eve]];
+            const crowdColour = d.crowd == null ? null : (d.crowd <= 3 ? '#65a30d' : d.crowd <= 5 ? '#a16207' : d.crowd <= 7 ? '#c2410c' : '#991b1b');
             return (
               <button
                 key={i}
@@ -1221,13 +1222,13 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                 }}
                 className="text-left border border-stone-200 bg-stone-50/40 p-3 hover:bg-stone-100/60 transition-colors flex flex-col"
               >
-                <div className="flex items-baseline justify-between mb-2.5">
-                  <span className="text-sm text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>Day {i + 1}</span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-[10px] tracking-wide uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                <div className="flex items-center justify-between mb-3 gap-2">
+                  <span className="text-base text-stone-900 shrink-0" style={{ fontFamily: 'Georgia, serif' }}>Day {i + 1}</span>
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] tracking-wide uppercase text-stone-400 truncate" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                       {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
                     </span>
-                    {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                    {crowdColour && <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: crowdColour }} />}
                   </span>
                 </div>
                 {rows.map(([labelText, slot]) => {
@@ -1235,7 +1236,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                   return (
                     <div key={labelText} className="flex items-center gap-2 mb-1.5">
                       <span className="text-[9px] tracking-[0.15em] uppercase text-stone-400 w-7 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{labelText}</span>
-                      <span className="text-xs px-2 py-1 flex-1 truncate" style={{ background: tone.bg, color: tone.fg, fontFamily: 'Georgia, serif' }}>{slot.label}</span>
+                      <span className="text-xs px-2 py-1 flex-1" style={{ background: tone.bg, color: tone.fg, fontFamily: 'Georgia, serif' }}>{slot.label}</span>
                     </div>
                   );
                 })}
