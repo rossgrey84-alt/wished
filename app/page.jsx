@@ -95,19 +95,17 @@ function RevealPause() {
   );
 }
 
-// The Wished lockup — bespoke serif W, lifted gold star, and the wordmark, drawn as ONE SVG so
-// the relationship is locked (icon + wordmark = one logo). Final "B" geometry: the mark eased
-// back ~7% against the wordmark, tighter tracking, star lifted high and to the right with air.
-function WishLockup({ height = 24, dark = false, className = '' }) {
-  const wColor = dark ? '#f4f1ea' : '#9a7b2e';
+// The Wished wordmark lockup (Fix A) — "WISHED" with the gold four-point star on its own W. No
+// separate W icon here: our mark IS the letter W, so placing the icon beside the word reads as a
+// doubled "W WISHED". The standalone W mark lives in the favicon and avatar instead, where it
+// stands alone. The star stays the brand signal, floating off the wordmark's W.
+function WishLockup({ height = 22, dark = false, className = '' }) {
+  const color = dark ? '#f4f1ea' : '#9a7b2e';
   const starColor = dark ? '#c9a94e' : '#9a7b2e';
   return (
-    <svg height={height} viewBox="-4 -30 388 93" role="img" aria-label="Wished" className={className} style={{ display: 'block', overflow: 'visible' }}>
-      <g transform="translate(32,31) scale(0.93) translate(-32,-31)">
-        <path d="M0,0 L10,0 L18,46 L28,6 L36,6 L46,46 L54,0 L64,0 L51,62 L41,62 L32,24 L23,62 L13,62 Z" fill={wColor} />
-        <path d="M0,-8 L1.9,-1.9 L8,0 L1.9,1.9 L0,8 L-1.9,1.9 L-8,0 L-1.9,-1.9 Z" fill={starColor} transform="translate(93,-19)" />
-      </g>
-      <text x="80" y="53" fontFamily="Georgia, serif" fontStyle="italic" fontWeight="500" fontSize="64" letterSpacing="8" fill={wColor}>WISHED</text>
+    <svg height={height} viewBox="-6 -66 410 84" role="img" aria-label="Wished" className={className} style={{ display: 'block', overflow: 'visible' }}>
+      <text x="0" y="0" fontFamily="Georgia, serif" fontStyle="italic" fontWeight="500" fontSize="64" letterSpacing="8" fill={color}>WISHED</text>
+      <path d="M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2 Z" fill={starColor} transform="translate(49,-54)" />
     </svg>
   );
 }
@@ -267,7 +265,7 @@ export default function DisneyPlanner() {
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
         <header className="mb-16 no-print">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
-            <WishLockup height={24} />
+            <WishLockup height={22} />
             {step > 0 && step <= totalSteps ? (
               <div className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {step} / {totalSteps}
@@ -1135,7 +1133,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         }
       `}</style>
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300 no-print">
-        <WishLockup height={20} />
+        <WishLockup height={18} />
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={copyLink}
