@@ -36,8 +36,8 @@ function decodePlan(token) {
 }
 
 const STEP_NAMES = {
-  1: 'dates', 2: 'party', 3: 'days', 4: 'experience', 5: 'intensity', 6: 'rhythm',
-  7: 'property', 8: 'lightning', 9: 'dining', 10: 'rides', 11: 'extras', 12: 'rest_days', 13: 'water_park',
+  1: 'dates', 2: 'party', 3: 'days', 4: 'intensity', 5: 'rhythm',
+  6: 'property', 7: 'lightning', 8: 'dining', 9: 'rides', 10: 'extras', 11: 'rest_days', 12: 'water_park',
 };
 function track(event, properties = {}) {
   if (typeof window === 'undefined') return; // browser only
@@ -124,7 +124,7 @@ export default function DisneyPlanner() {
     waterParkOpen: null,
   });
 
-  const totalSteps = 13;
+  const totalSteps = 12;
 
   // ---- Analytics: landing view + completion ----
   const planFiredRef = useRef(false);
@@ -139,11 +139,11 @@ export default function DisneyPlanner() {
     setAnswers(decoded.answers);
     setPinnedDays(decoded.pinnedDays);
     planFiredRef.current = true; // a reopened link isn't a fresh build — don't double-count it
-    setStep(14);
+    setStep(13);
     track('plan_opened_from_link');
   }, []);
   useEffect(() => {
-    if (step !== 14 || planFiredRef.current) return;
+    if (step !== 13 || planFiredRef.current) return;
     planFiredRef.current = true; // count each genuine build once (reset() re-arms it)
     const a = answers;
     let tripDays = null;
@@ -200,23 +200,22 @@ export default function DisneyPlanner() {
       case 1: return answers.dates.start && answers.dates.end && answers.arrival !== null;
       case 2: return (answers.party.adults + answers.party.teens + answers.party.kids + answers.party.under3) > 0;
       case 3: return answers.days !== null;
-      case 4: return answers.experience !== null;
-      case 5: return answers.intensity !== null;
-      case 6: return answers.rhythm !== null;
-      case 7: return answers.property !== null && (
+      case 4: return answers.intensity !== null;
+      case 5: return answers.rhythm !== null;
+      case 6: return answers.property !== null && (
         (answers.property === 'on' && answers.resort) ||
         (answers.property === 'off' && answers.offPropertyTransport !== null)
       );
-      case 8: return answers.lightning !== null;
-      case 9: return answers.dining !== null;
-      case 10: return answers.rides.length > 0;
-      case 11: return answers.hopper !== null && answers.evenings !== null;
-      case 12: {
+      case 7: return answers.lightning !== null;
+      case 8: return answers.dining !== null;
+      case 9: return answers.rides.length > 0;
+      case 10: return answers.hopper !== null && answers.evenings !== null;
+      case 11: {
         if (answers.restDays === null) return false;
         if (answers.restDays === 'none') return true;
         return answers.restDayType !== null;
       }
-      case 13: {
+      case 12: {
         const numDays = typeof answers.days === 'number' ? answers.days : 4;
         // Water park step only shown for 5+ day trips — auto-pass if shorter
         if (numDays < 5) return true;
@@ -286,16 +285,15 @@ export default function DisneyPlanner() {
           {step === 1 && <DatesStep dates={answers.dates} arrival={answers.arrival} onRange={setDateRange} onArrival={v => update('arrival', v)} />}
           {step === 2 && <PartyStep party={answers.party} onChange={(k,v) => updateNested('party', k, v)} />}
           {step === 3 && <DaysStep value={answers.days} customDays={answers.customDays} onChange={v => update('days', v)} onCustomDays={v => update('customDays', v)} />}
-          {step === 4 && <ExperienceStep value={answers.experience} onChange={v => update('experience', v)} />}
-          {step === 5 && <IntensityStep value={answers.intensity} onChange={v => update('intensity', v)} />}
-          {step === 6 && <RhythmStep value={answers.rhythm} onChange={v => update('rhythm', v)} />}
-          {step === 7 && <PropertyStep property={answers.property} resort={answers.resort} transport={answers.offPropertyTransport} onProperty={v => update('property', v)} onResort={v => update('resort', v)} onTransport={v => update('offPropertyTransport', v)} />}
-          {step === 8 && <LightningStep value={answers.lightning} onChange={v => update('lightning', v)} />}
-          {step === 9 && <DiningStep value={answers.dining} onChange={v => update('dining', v)} />}
-          {step === 10 && <RidesStep value={answers.rides} onChange={v => update('rides', v)} />}
-          {step === 11 && <ExtrasStep hopper={answers.hopper} evenings={answers.evenings} onHopper={v => update('hopper', v)} onEvenings={v => update('evenings', v)} />}
-          {step === 12 && <RestDaysStep restDays={answers.restDays} restDayType={answers.restDayType} onRestDays={v => update('restDays', v)} onRestDayType={v => update('restDayType', v)} />}
-          {step === 13 && <WaterParkStep
+          {step === 4 && <IntensityStep value={answers.intensity} onChange={v => update('intensity', v)} />}
+          {step === 5 && <RhythmStep value={answers.rhythm} onChange={v => update('rhythm', v)} />}
+          {step === 6 && <PropertyStep property={answers.property} resort={answers.resort} transport={answers.offPropertyTransport} onProperty={v => update('property', v)} onResort={v => update('resort', v)} onTransport={v => update('offPropertyTransport', v)} />}
+          {step === 7 && <LightningStep value={answers.lightning} onChange={v => update('lightning', v)} />}
+          {step === 8 && <DiningStep value={answers.dining} onChange={v => update('dining', v)} />}
+          {step === 9 && <RidesStep value={answers.rides} onChange={v => update('rides', v)} />}
+          {step === 10 && <ExtrasStep hopper={answers.hopper} evenings={answers.evenings} onHopper={v => update('hopper', v)} onEvenings={v => update('evenings', v)} />}
+          {step === 11 && <RestDaysStep restDays={answers.restDays} restDayType={answers.restDayType} onRestDays={v => update('restDays', v)} onRestDayType={v => update('restDayType', v)} />}
+          {step === 12 && <WaterParkStep
             numDays={typeof answers.days === 'number' ? answers.days : 4}
             interest={answers.waterParkInterest}
             count={answers.waterParkCount}
@@ -308,8 +306,8 @@ export default function DisneyPlanner() {
               if (answers.waterParkInterest === null) update('waterParkInterest', 'no');
             }}
           />}
-          {step === 14 && revealing && <RevealPause />}
-          {step === 14 && !revealing && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
+          {step === 13 && revealing && <RevealPause />}
+          {step === 13 && !revealing && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
         </div>
 
         {step > 0 && step <= totalSteps && (
@@ -352,7 +350,7 @@ function Intro({ onStart }) {
           Wish it.<br />We'll plan<br />the rest.
         </h1>
         <p className="text-lg text-stone-700 max-w-xl leading-relaxed">
-          Answer thirteen quick questions and get a personalised Walt Disney World
+          Answer twelve quick questions and get a personalised Walt Disney World
           strategy — which parks on which days, where to stay, how to handle Lightning
           Lane, and what to book before you travel. No spreadsheets, no hour-by-hour
           itineraries. Just a plan built around your family.
@@ -717,22 +715,6 @@ function DaysStep({ value, customDays, onChange, onCustomDays }) {
   );
 }
 
-function ExperienceStep({ value, onChange }) {
-  const opts = [
-    { v: 'first', label: 'First-timers', sub: "Headline experiences come first. We'll prioritise the unmissables." },
-    { v: 'returning', label: 'Been before', sub: "You know the basics. We'll focus on what's new and what you've missed." },
-    { v: 'mixed', label: 'Mixed', sub: "Some first-timers, some veterans. We'll balance both." },
-  ];
-  return (
-    <div>
-      <StepHeader icon={Compass} eyebrow="Question 4" title="First trip, or have you been before?" sub="This changes everything about prioritisation." />
-      <div className="space-y-3">
-        {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
-      </div>
-    </div>
-  );
-}
-
 function IntensityStep({ value, onChange }) {
   const opts = [
     { v: 'all', label: 'Everything, including the big coasters', sub: 'Tron, Rise, Guardians, Slinky, Tower of Terror — all in.' },
@@ -742,7 +724,7 @@ function IntensityStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Gauge} eyebrow="Question 5" title="How much thrill are you after?" sub="Be honest — this drives which parks get more time and how we sequence the day." />
+      <StepHeader icon={Gauge} eyebrow="Question 4" title="How much thrill are you after?" sub="Be honest — this drives which parks get more time and how we sequence the day." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -760,7 +742,7 @@ function RhythmStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 6" title="What does your ideal park day look like?" sub="Long days drain young kids. Late starts waste cool morning hours. There's no right answer — just yours." />
+      <StepHeader icon={Sparkles} eyebrow="Question 5" title="What does your ideal park day look like?" sub="Long days drain young kids. Late starts waste cool morning hours. There's no right answer — just yours." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -783,7 +765,7 @@ function PropertyStep({ property, resort, transport, onProperty, onResort, onTra
   ];
   return (
     <div>
-      <StepHeader icon={Hotel} eyebrow="Question 7" title="Where are you staying?" sub="On-property gets you Early Theme Park Entry and easier transport. Off-property usually wins on space and cost." />
+      <StepHeader icon={Hotel} eyebrow="Question 6" title="Where are you staying?" sub="On-property gets you Early Theme Park Entry and easier transport. Off-property usually wins on space and cost." />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
         <SelectCard selected={property === 'on'} onClick={() => onProperty('on')} title="On Disney property" sub="Disney resort, with park transport included." />
         <SelectCard selected={property === 'off'} onClick={() => onProperty('off')} title="Off-property" sub="Hotel, villa, or rental nearby." />
@@ -823,7 +805,7 @@ function LightningStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Zap} eyebrow="Question 8" title="How do you feel about skipping the lines?" sub="Disney's paid line-skip system. Multi Pass bundles regular rides; Single Pass buys the top headliners individually (Tron, Rise of the Resistance, Flight of Passage). Most experienced parties pay selectively, not always." />
+      <StepHeader icon={Zap} eyebrow="Question 7" title="How do you feel about skipping the lines?" sub="Disney's paid line-skip system. Multi Pass bundles regular rides; Single Pass buys the top headliners individually (Tron, Rise of the Resistance, Flight of Passage). Most experienced parties pay selectively, not always." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -840,7 +822,7 @@ function DiningStep({ value, onChange }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 9" title="How do you want to eat?" sub="Table-service restaurants need booking 60 days out at 7am ET. Some love that. Plenty don't." />
+      <StepHeader icon={Sparkles} eyebrow="Question 8" title="How do you want to eat?" sub="Table-service restaurants need booking 60 days out at 7am ET. Some love that. Plenty don't." />
       <div className="space-y-3">
         {opts.map(o => <SelectCard key={o.v} selected={value === o.v} onClick={() => onChange(o.v)} title={o.label} sub={o.sub} />)}
       </div>
@@ -889,7 +871,7 @@ function RidesStep({ value, onChange }) {
 
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 10" title="Which rides would you hate to miss?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
+      <StepHeader icon={Sparkles} eyebrow="Question 9" title="Which rides would you hate to miss?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
       <div className="space-y-6">
         {Object.entries(ridesByPark).map(([park, rides]) => (
           <div key={park}>
@@ -933,7 +915,7 @@ function ExtrasStep({ hopper, evenings, onHopper, onEvenings }) {
   ];
   return (
     <div>
-      <StepHeader icon={Compass} eyebrow="Question 11" title="A couple more" sub="Park hopper, and how late the party can stay out." />
+      <StepHeader icon={Compass} eyebrow="Question 10" title="A couple more" sub="Park hopper, and how late the party can stay out." />
       <div className="mb-10">
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Park hopper?</div>
         <div className="space-y-3">
@@ -965,7 +947,7 @@ function RestDaysStep({ restDays, restDayType, onRestDays, onRestDayType }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 12" title="How do you like to recharge?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
+      <StepHeader icon={Sparkles} eyebrow="Question 11" title="How do you like to recharge?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
       <div className={restDays && restDays !== 'none' ? 'mb-10' : ''}>
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Do you want rest days built in?</div>
         <div className="space-y-3">
@@ -989,7 +971,7 @@ function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, on
   if (numDays < 5) {
     return (
       <div>
-        <StepHeader icon={Sparkles} eyebrow="Question 13" title="Water parks" sub="Your trip's too short to add a water park day — they need a full day, and you'll get more out of the main parks. Skipping this." />
+        <StepHeader icon={Sparkles} eyebrow="Question 12" title="Water parks" sub="Your trip's too short to add a water park day — they need a full day, and you'll get more out of the main parks. Skipping this." />
       </div>
     );
   }
@@ -1023,7 +1005,7 @@ function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, on
     <div>
       <StepHeader
         icon={Sparkles}
-        eyebrow="Question 13"
+        eyebrow="Question 12"
         title="Water parks?"
         sub="Disney has two — Typhoon Lagoon and Blizzard Beach. Usually only one is open at a time; check Disney's calendar to confirm."
       />
@@ -1923,32 +1905,12 @@ function crowdOptimisedSequence(allocation, startDate, a, hasYoungKids, pinnedDa
     }
     if (firstFullDay === -1) firstFullDay = firstPartyFallback;
     if (firstFullDay >= 0) {
-      const mkCrowd = estimateCrowd(dates[firstFullDay], 'Magic Kingdom') || 5;
-      const EXTREME = 9; // crowd 9-10 = holiday-level spike (July 4th, Christmas week, etc.)
-      if (mkCrowd >= EXTREME) {
-        // Bump: find the nearest LATER day with materially lower MK crowd, record the reason
-        let best = firstFullDay, bestCrowd = mkCrowd;
-        for (let i = earliestFullDay; i < numDays; i++) {
-          if (sequence[i] !== null) continue;
-          if (isPartyNight(dates[i])) continue; // don't bump MK onto a party night either
-          const c = estimateCrowd(dates[i], 'Magic Kingdom') || 5;
-          if (c < bestCrowd - 1) { best = i; bestCrowd = c; }
-        }
-        if (best !== firstFullDay) {
-          sequence[best] = 'Magic Kingdom';
-          used.add(best);
-          mkBumpInfo.bumped = true;
-          mkBumpInfo.day = best;
-          mkBumpInfo.reason = `Magic Kingdom usually leads your trip, but ${dates[firstFullDay].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} is a peak crowd day there — we've moved it to ${dates[best].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} so your first castle day isn't the busiest one of the trip.`;
-        } else {
-          // Couldn't find a better day — keep it first
-          sequence[firstFullDay] = 'Magic Kingdom';
-          used.add(firstFullDay);
-        }
-      } else {
-        sequence[firstFullDay] = 'Magic Kingdom';
-        used.add(firstFullDay);
-      }
+      // First-timer rule: Magic Kingdom ALWAYS anchors the first full day. The castle-first
+      // moment is the point of a first trip — it beats crowd optimisation. Party nights are
+      // already excluded by the loop above (MK closes to day guests at 6pm on those, so a full
+      // first MK day isn't possible); that exclusion is a hard constraint and stays.
+      sequence[firstFullDay] = 'Magic Kingdom';
+      used.add(firstFullDay);
     }
   }
   allocation._mkBump = mkBumpInfo;
