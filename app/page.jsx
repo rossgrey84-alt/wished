@@ -1182,36 +1182,63 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         );
       })()}
 
-      {/* One-page summary — the whole trip at a glance (also page one of the printed PDF) */}
+      {/* At a glance — the whole trip as a morning / midday / evening grid. Doubles as page one
+          of the printed PDF, and as the shareable summary. */}
       <div className="plan-summary mb-12">
-        <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+        <div className="text-xs tracking-[0.4em] uppercase mb-5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           At a glance
         </div>
-        <div className="border border-stone-200 bg-stone-50/40">
-          {days.map((d, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setExpandedDays(prev => ({ ...prev, [i]: true }));
-                if (typeof document !== 'undefined') {
-                  const el = document.getElementById(`day-${i}`);
-                  if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-                }
-              }}
-              className={`w-full text-left flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 hover:bg-stone-100/60 transition-colors ${i > 0 ? 'border-t border-stone-200' : ''}`}
-            >
-              <span className="text-xs tracking-[0.18em] uppercase text-stone-500 w-16 sm:w-20 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                Day {i + 1}
-              </span>
-              <span className="text-xs tracking-[0.12em] uppercase text-stone-400 w-24 shrink-0 hidden sm:block" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
-              </span>
-              <span className="flex-1 text-stone-900 italic leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-                {d.park}
-              </span>
-              {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {days.map((d, i) => {
+            const s = daySlots(d, answers, i, days.length);
+            const rows = [['AM', s.am], ['MID', s.mid], ['EVE', s.eve]];
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  setExpandedDays(prev => ({ ...prev, [i]: true }));
+                  if (typeof document !== 'undefined') {
+                    const el = document.getElementById(`day-${i}`);
+                    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+                  }
+                }}
+                className="text-left border border-stone-200 bg-stone-50/40 p-3 hover:bg-stone-100/60 transition-colors flex flex-col"
+              >
+                <div className="flex items-baseline justify-between mb-2.5">
+                  <span className="text-sm text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>Day {i + 1}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[10px] tracking-wide uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                      {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
+                    </span>
+                    {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                  </span>
+                </div>
+                {rows.map(([labelText, slot]) => {
+                  const tone = slotTone(slot.kind);
+                  return (
+                    <div key={labelText} className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[9px] tracking-[0.15em] uppercase text-stone-400 w-7 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{labelText}</span>
+                      <span className="text-xs px-2 py-1 flex-1 truncate" style={{ background: tone.bg, color: tone.fg, fontFamily: 'Georgia, serif' }}>{slot.label}</span>
+                    </div>
+                  );
+                })}
+                {(s.ll || s.note) && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 items-center">
+                    {s.ll && (
+                      <span className="inline-flex items-center gap-1 text-[9px] tracking-wide uppercase px-1.5 py-0.5" style={{ background: '#f3e7cf', color: '#9a7b2e', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                        <WishStar size={9} /> LL
+                      </span>
+                    )}
+                    {s.note && <span className="text-[10px] italic text-stone-500" style={{ fontFamily: 'Georgia, serif' }}>{s.note}</span>}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] tracking-wide uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          <span>AM morning · MID midday · EVE evening</span>
+          <span className="inline-flex items-center gap-1"><WishStar size={9} color="#9a7b2e" /> LL = Lightning Lane recommended</span>
         </div>
       </div>
 
@@ -2098,9 +2125,10 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   const splitIntensity = a.intensity === 'split';
   const calmOnly = a.intensity === 'calm';
   const onProperty = a.property === 'on';
-  const ropeDrop = a.rhythm === 'rope';
-  const splitRhythm = a.rhythm === 'split';
-  const lateStart = a.rhythm === 'late';
+  const rhythm = resolveRhythm(a);
+  const ropeDrop = rhythm === 'rope';
+  const splitRhythm = rhythm === 'split';
+  const lateStart = rhythm === 'late';
   const earlyEvenings = a.evenings === 'early';
   const lateEvenings = a.evenings === 'late';
   const arrival = a.arrival || 'morning';
@@ -2178,7 +2206,7 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   const partyNight = park === 'Magic Kingdom' ? partyKind(date) : null; // 'halloween' | 'christmas' | null
   const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort, partyNight });
 
-  return { headline, morning, afternoon, evening };
+  return { headline, morning, afternoon, evening, eveningPark: splitEveningPark };
 }
 
 function buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival }) {
@@ -2441,6 +2469,92 @@ function generateHeadline(a) {
 // The reveal. Surfaces the decisions the engine actually made as plain strategy statements,
 // each with a real why. Every line here is derived from the generated plan or the answers —
 // never invented. If a reason isn't genuinely the engine's reason, it doesn't get said.
+// Property-driven rhythm. Research is clear: one park per day is the right default; the two-park
+// morning/evening split only works on-property with a Park Hopper (fast transit makes the midday
+// return cheap). So "unsure" resolves from property + hopper, and a split without a hopper — which
+// is impossible — falls back to one park.
+function resolveRhythm(a) {
+  let r = a.rhythm;
+  if (r === 'unsure' || !r) {
+    r = (a.property === 'on' && a.hopper === 'yes') ? 'split' : 'rope';
+  }
+  if (r === 'split' && a.hopper === 'no') r = 'rope';
+  return r;
+}
+
+function isParkName(p) {
+  return p === 'Magic Kingdom' || p === 'EPCOT' || p === 'Hollywood Studios' || p === 'Animal Kingdom';
+}
+
+// Muted, functional colour-coding for the at-a-glance grid — enough to scan, restrained enough
+// to stay on-brand.
+function slotTone(kind) {
+  switch (kind) {
+    case 'Magic Kingdom':     return { bg: '#ece9f5', fg: '#4b4b7a' };
+    case 'EPCOT':             return { bg: '#e6eef4', fg: '#3a5670' };
+    case 'Hollywood Studios': return { bg: '#f4e9ec', fg: '#7a4a57' };
+    case 'Animal Kingdom':    return { bg: '#e9f0e6', fg: '#4a6342' };
+    case 'water':             return { bg: '#e6f0ef', fg: '#3a6660' };
+    case 'springs':           return { bg: '#f3ede2', fg: '#7a5e2e' };
+    default:                  return { bg: '#f0ede6', fg: '#78716c' };
+  }
+}
+
+// Turns a generated day into three short slots (morning / midday / evening) for the grid. Derived
+// from the same data the day cards use — the evening hop park comes straight from the rationale, so
+// the grid and the detailed cards never disagree.
+function daySlots(day, a, idx, total) {
+  const p = day.park;
+  const onProperty = a.property === 'on';
+  const rhythm = resolveRhythm(a);
+  const isArrival = idx === 0;
+  const isDeparture = idx === total - 1 && total > 1;
+  const evePark = (day.rationale && day.rationale.eveningPark) || null;
+  const ll = day.llmp === true;
+
+  if (p === 'Travel day') {
+    return { am: { label: 'Travel', kind: 'travel' }, mid: { label: 'Arrive & check in', kind: 'travel' }, eve: { label: onProperty ? 'Resort dinner' : 'Settle in', kind: 'free' }, ll: false, note: null };
+  }
+  if (p === 'Rest day') {
+    const t = a.restDayType;
+    if (t === 'morning') return { am: { label: 'Slow morning', kind: 'rest' }, mid: { label: 'Pool / resort', kind: 'rest' }, eve: { label: 'Easy evening', kind: 'free' }, ll: false, note: null };
+    if (t === 'pool')    return { am: { label: 'Pool day', kind: 'rest' }, mid: { label: 'Resort', kind: 'rest' }, eve: { label: 'Resort evening', kind: 'free' }, ll: false, note: null };
+    return { am: { label: 'Rest', kind: 'rest' }, mid: { label: 'Disney Springs', kind: 'springs' }, eve: { label: 'Easy evening', kind: 'free' }, ll: false, note: null };
+  }
+  if (p === 'Water park') {
+    return { am: { label: 'Water park', kind: 'water' }, mid: { label: 'Water park', kind: 'water' }, eve: { label: 'Free evening', kind: 'free' }, ll: false, note: null };
+  }
+
+  const party = (p === 'Magic Kingdom') ? partyKind(day.date) : null;
+  const note = party === 'halloween' ? 'Halloween party — out by 6pm'
+            : party === 'christmas' ? 'Christmas party — out by 6pm'
+            : null;
+
+  let am, mid, eve;
+  if (isArrival && (a.arrival === 'evening' || a.arrival === 'midday')) {
+    am = { label: 'Arrive & check in', kind: 'travel' };
+    mid = { label: onProperty ? 'Settle / pool' : 'Settle in', kind: 'free' };
+    eve = { label: p, kind: p };
+  } else if (rhythm === 'split' && evePark && !isDeparture) {
+    am = { label: p, kind: p };
+    mid = { label: onProperty ? 'Resort break' : 'Lunch & slow hours', kind: 'rest' };
+    eve = { label: evePark, kind: evePark };
+  } else if (rhythm === 'late') {
+    am = { label: 'Slow start', kind: 'free' };
+    mid = { label: p, kind: p };
+    eve = { label: p, kind: p };
+  } else if (rhythm === 'morning') {
+    am = { label: p, kind: p };
+    mid = { label: 'Out by early afternoon', kind: p };
+    eve = { label: 'Free evening', kind: 'free' };
+  } else {
+    am = { label: p, kind: p };
+    mid = { label: onProperty ? 'Resort break' : 'Lunch in park', kind: onProperty ? 'rest' : p };
+    eve = { label: p, kind: p };
+  }
+  return { am, mid, eve, ll, note };
+}
+
 function generateStrategy(a, days) {
   const PARKS = ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'];
   const isPark = (p) => PARKS.includes(p);
@@ -2624,7 +2738,7 @@ function generateDayPriority(d, dayIndex, totalDays, a) {
   const isDeparture = dayIndex === totalDays - 1 && totalDays > 1;
   const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
   const hasTeens = a.party.teens > 0;
-  const ropeDrop = a.rhythm === 'rope';
+  const ropeDrop = resolveRhythm(a) === 'rope';
 
   if (park === 'Travel day') return "Settle in. The trip starts properly tomorrow — rest tonight.";
   if (park === 'Rest day') return "Protect energy. This day is what stops the trip falling apart later — don't be tempted to sneak in a park.";
