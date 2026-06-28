@@ -164,6 +164,18 @@ export default function DisneyPlanner() {
     });
   }, [step]);
 
+  // Default the park-days count from the trip dates the user already entered, so they don't
+  // re-enter what we know. Only fills when they haven't set it themselves — they can amend.
+  useEffect(() => {
+    if (step !== 3 || answers.days !== null) return;
+    const { start, end } = answers.dates || {};
+    if (!start || !end) return;
+    const ms = new Date(end) - new Date(start);
+    if (Number.isNaN(ms)) return;
+    const span = Math.max(2, Math.min(21, Math.round(ms / 86400000) + 1));
+    setAnswers(prev => ({ ...prev, days: span, customDays: span >= 7 ? span : prev.customDays }));
+  }, [step]);
+
   const update = (key, value) => setAnswers({ ...answers, [key]: value });
   const updateNested = (key, subkey, value) =>
     setAnswers({ ...answers, [key]: { ...answers[key], [subkey]: value } });
