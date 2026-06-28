@@ -165,15 +165,18 @@ export default function DisneyPlanner() {
   }, [step]);
 
   // Default the park-days count from the trip dates the user already entered, so they don't
-  // re-enter what we know. Only fills when they haven't set it themselves — they can amend.
+  // re-enter what we know. We assume the final day is for travelling home (the common case),
+  // so default to one less than the calendar span — they can add it back. Only fills when
+  // they haven't set it themselves.
   useEffect(() => {
     if (step !== 3 || answers.days !== null) return;
     const { start, end } = answers.dates || {};
     if (!start || !end) return;
     const ms = new Date(end) - new Date(start);
     if (Number.isNaN(ms)) return;
-    const span = Math.max(2, Math.min(21, Math.round(ms / 86400000) + 1));
-    setAnswers(prev => ({ ...prev, days: span, customDays: span >= 7 ? span : prev.customDays }));
+    const span = Math.round(ms / 86400000) + 1;           // inclusive calendar days
+    const parkDays = Math.max(2, Math.min(21, span - 1)); // last day left for travelling home
+    setAnswers(prev => ({ ...prev, days: parkDays }));
   }, [step]);
 
   const update = (key, value) => setAnswers({ ...answers, [key]: value });
@@ -296,7 +299,7 @@ export default function DisneyPlanner() {
           {step === 0 && <Intro onStart={next} />}
           {step === 1 && <DatesStep dates={answers.dates} arrival={answers.arrival} onRange={setDateRange} onArrival={v => update('arrival', v)} />}
           {step === 2 && <PartyStep party={answers.party} onChange={(k,v) => updateNested('party', k, v)} />}
-          {step === 3 && <DaysStep value={answers.days} customDays={answers.customDays} onChange={v => update('days', v)} onCustomDays={v => update('customDays', v)} />}
+          {step === 3 && <DaysStep value={answers.days} onChange={v => update('days', v)} />}
           {step === 4 && <IntensityStep value={answers.intensity} onChange={v => update('intensity', v)} />}
           {step === 5 && <RhythmStep value={answers.rhythm} onChange={v => update('rhythm', v)} />}
           {step === 6 && <PropertyStep property={answers.property} resort={answers.resort} transport={answers.offPropertyTransport} onProperty={v => update('property', v)} onResort={v => update('resort', v)} onTransport={v => update('offPropertyTransport', v)} />}
@@ -696,33 +699,22 @@ function Counter({ label, sub, value, onChange }) {
   );
 }
 
-function DaysStep({ value, customDays, onChange, onCustomDays }) {
-  const opts = [
-    { v: 2, label: '2 days' }, { v: 3, label: '3 days' }, { v: 4, label: '4 days' },
-    { v: 5, label: '5 days' }, { v: 6, label: '6 days' }, { v: 'custom', label: '7 or more days' },
-  ];
+function DaysStep({ value, onChange }) {
+  const days = typeof value === 'number' ? value : 5;
   return (
     <div>
       <StepHeader icon={Clock} eyebrow="Question 3" title="How many days in the parks?" sub="Not your full trip — just the days you'll have park tickets for." />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-        {opts.map(o => <SelectCard
-          key={o.v}
-          selected={value === o.v || (o.v === 'custom' && typeof value === 'number' && value >= 7)}
-          onClick={() => onChange(o.v === 'custom' ? customDays : o.v)}
-          title={o.label}
-          sub=""
-        />)}
-      </div>
-      {(typeof value === 'number' && value >= 7) && (
-        <div className="border border-stone-300 p-5 bg-stone-50/50">
-          <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>How many days exactly?</div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => onChange(Math.max(7, value - 1))} className="w-10 h-10 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">−</button>
-            <div className="text-3xl text-stone-900 min-w-[3rem] text-center" style={{ fontFamily: 'Georgia, serif' }}>{value}</div>
-            <button onClick={() => onChange(Math.min(21, value + 1))} className="w-10 h-10 flex items-center justify-center border border-stone-400 text-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors">+</button>
-          </div>
+      <div className="border border-stone-300 p-6 bg-stone-50/50">
+        <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Park days</div>
+        <div className="flex items-center gap-5">
+          <button onClick={() => onChange(Math.max(2, days - 1))} className="w-12 h-12 flex items-center justify-center border border-stone-400 text-stone-700 text-xl hover:bg-stone-900 hover:text-stone-50 transition-colors">−</button>
+          <div className="text-4xl text-stone-900 min-w-[3.5rem] text-center" style={{ fontFamily: 'Georgia, serif' }}>{days}</div>
+          <button onClick={() => onChange(Math.min(21, days + 1))} className="w-12 h-12 flex items-center justify-center border border-stone-400 text-stone-700 text-xl hover:bg-stone-900 hover:text-stone-50 transition-colors">+</button>
         </div>
-      )}
+        <p className="text-sm text-stone-500 mt-5 leading-relaxed max-w-md">
+          We've set this from your dates and left the last day free for travelling home. Add it back if you'll have park tickets then too.
+        </p>
+      </div>
     </div>
   );
 }
