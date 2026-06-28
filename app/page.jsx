@@ -95,13 +95,19 @@ function RevealPause() {
   );
 }
 
-// The Wished mark — the bespoke serif W with the gold four-point star rising off its shoulder.
-// Outlined paths (not a font), so it renders identically everywhere. Used as the in-site lockup.
-function WishMark({ height = 20, wColor = '#9a7b2e', starColor = '#9a7b2e', className = '' }) {
+// The Wished lockup — bespoke serif W, lifted gold star, and the wordmark, drawn as ONE SVG so
+// the relationship is locked (icon + wordmark = one logo). Final "B" geometry: the mark eased
+// back ~7% against the wordmark, tighter tracking, star lifted high and to the right with air.
+function WishLockup({ height = 24, dark = false, className = '' }) {
+  const wColor = dark ? '#f4f1ea' : '#9a7b2e';
+  const starColor = dark ? '#c9a94e' : '#9a7b2e';
   return (
-    <svg height={height} viewBox="-4 -22 100 88" className={className} aria-hidden="true" style={{ display: 'block' }}>
-      <path d="M0,0 L10,0 L18,46 L28,6 L36,6 L46,46 L54,0 L64,0 L51,62 L41,62 L32,24 L23,62 L13,62 Z" fill={wColor} />
-      <path d="M0,-7 L1.7,-1.7 L7,0 L1.7,1.7 L0,7 L-1.7,1.7 L-7,0 L-1.7,-1.7 Z" fill={starColor} transform="translate(80,-8)" />
+    <svg height={height} viewBox="-4 -30 388 93" role="img" aria-label="Wished" className={className} style={{ display: 'block', overflow: 'visible' }}>
+      <g transform="translate(32,31) scale(0.93) translate(-32,-31)">
+        <path d="M0,0 L10,0 L18,46 L28,6 L36,6 L46,46 L54,0 L64,0 L51,62 L41,62 L32,24 L23,62 L13,62 Z" fill={wColor} />
+        <path d="M0,-8 L1.9,-1.9 L8,0 L1.9,1.9 L0,8 L-1.9,1.9 L-8,0 L-1.9,-1.9 Z" fill={starColor} transform="translate(93,-19)" />
+      </g>
+      <text x="80" y="53" fontFamily="Georgia, serif" fontStyle="italic" fontWeight="500" fontSize="64" letterSpacing="8" fill={wColor}>WISHED</text>
     </svg>
   );
 }
@@ -261,12 +267,7 @@ export default function DisneyPlanner() {
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
         <header className="mb-16 no-print">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
-            <div className="flex items-center gap-2.5">
-              <WishMark height={22} />
-              <span className="text-sm tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
-                Wished
-              </span>
-            </div>
+            <WishLockup height={24} />
             {step > 0 && step <= totalSteps ? (
               <div className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {step} / {totalSteps}
@@ -1134,12 +1135,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         }
       `}</style>
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300 no-print">
-        <div className="flex items-center gap-2">
-          <WishMark height={18} />
-          <span className="text-xs tracking-[0.25em] uppercase" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, color: '#9a7b2e' }}>
-            Wished
-          </span>
-        </div>
+        <WishLockup height={20} />
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={copyLink}
