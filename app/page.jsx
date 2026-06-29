@@ -2641,6 +2641,16 @@ function daySlots(day, a, idx, total) {
 // Display label for a day's title. The internal park value stays 'Rest day' so the engine and
 // sequencing are untouched — we only change what the user sees, so a morning-rest-plus-evening-park
 // day is never mislabelled as a full rest day.
+// Scannable reference for a Lightning Lane day — "Day 2 (Magic Kingdom, 17 Jul)". On long trips,
+// repeated weekday names ("Monday… Monday…") are ambiguous; day number + park + date isn't.
+function llDayRef(d, days) {
+  const idx = days ? days.indexOf(d) : -1;
+  const num = idx >= 0 ? `Day ${idx + 1}` : '';
+  const date = d.date ? d.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const detail = [d.park, date].filter(Boolean).join(', ');
+  return num ? `${num} (${detail})` : detail;
+}
+
 function dayLabel(park, a) {
   if (park === 'Rest day') {
     const t = (a && a.restDayType) || 'full';
@@ -2783,7 +2793,7 @@ function generateStrategy(a, days) {
       why: `It earns its keep most on ${parks}; on the quieter days you'd be fine without it.`,
     });
   } else {
-    const dayList = llDays.map(d => wd(d)).filter(Boolean);
+    const dayList = llDays.map(d => llDayRef(d, days)).filter(Boolean);
     const parks = [...new Set(llDays.map(d => d.park))];
     const dayPhrase = dayList.length === 1
       ? dayList[0]
@@ -2881,7 +2891,7 @@ function generateActions(a, days) {
     const llDays = days ? days.filter(d => shouldBuyLL(d, a)) : [];
     const parkDays = days ? days.filter(d => ['Magic Kingdom','EPCOT','Hollywood Studios','Animal Kingdom'].includes(d.park)) : [];
     if (llDays.length > 0) {
-      const dayLabels = llDays.map(d => d.date ? `${d.park} (${d.date.toLocaleDateString('en-GB',{weekday:'short'})})` : d.park);
+      const dayLabels = llDays.map(d => llDayRef(d, days));
       actions.push({ category: 'Lightning Lane', what: `Multi Pass on these days: ${dayLabels.join(', ')}`, when: onProperty ? '7 days before arrival, 7am ET' : '3 days before each, 7am ET' });
       if (llDays.length < parkDays.length) {
         actions.push({ category: 'Lightning Lane', what: 'Skip Multi Pass on the other park days — standby is fine there', when: 'Save the money for Single Pass on a headliner or for dining' });
