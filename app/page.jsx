@@ -1160,14 +1160,31 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       </div>
       <div className="mb-12">
         <div className="text-xs tracking-[0.4em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Your strategy
+          Your Wished strategy
         </div>
-        <h1 className="text-4xl md:text-5xl text-stone-900 font-normal italic leading-tight mb-6">
-          {generateHeadline(answers)}
+        <h1 className="text-4xl md:text-5xl text-stone-900 font-normal italic leading-tight mb-3">
+          {holidayStyle(answers, days).name}
         </h1>
+        <p className="text-lg text-stone-600 leading-relaxed max-w-2xl italic mb-5" style={{ fontFamily: 'Georgia, serif' }}>
+          {holidayStyle(answers, days).blurb}
+        </p>
         <p className="text-lg text-stone-700 leading-relaxed max-w-2xl">
           {generateSummary(answers, days)}
         </p>
+      </div>
+
+      <div className="mb-16">
+        <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+          Your trip shape
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {tripShape(answers, days).map((c, i) => (
+            <div key={i} className="border border-stone-200 bg-stone-50/40 px-4 py-3">
+              <div className="text-[10px] tracking-[0.15em] uppercase text-stone-400 mb-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{c.label}</div>
+              <div className="text-stone-900 leading-tight" style={{ fontFamily: 'Georgia, serif' }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {(() => {
@@ -1176,7 +1193,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         return (
           <div className="mb-16">
             <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-              The calls we've made
+              Wished recommends
             </div>
             <div className="space-y-6">
               {strategy.map((s, i) => (
@@ -1186,6 +1203,26 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     <div className="text-xl md:text-2xl text-stone-900 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>{s.decision}</div>
                     <p className="text-stone-600 leading-relaxed mt-1.5 max-w-xl">{s.why}</p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {(() => {
+        const warnings = watchOuts(answers, days);
+        if (!warnings.length) return null;
+        return (
+          <div className="mb-16">
+            <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+              Watch out for
+            </div>
+            <div className="space-y-4">
+              {warnings.map((w, i) => (
+                <div key={i} className="border-l-2 pl-4" style={{ borderColor: '#d8d1c2' }}>
+                  <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{w.title}</div>
+                  <p className="text-stone-700 leading-relaxed max-w-2xl">{w.body}</p>
                 </div>
               ))}
             </div>
@@ -2567,6 +2604,84 @@ function daySlots(day, a, idx, total) {
   return { am, mid, eve, ll, note };
 }
 
+// Holiday Style archetype — a memorable identity for the plan, derived from the real answer mix
+// (thrill, pace, downtime, party). Never a random label; every branch keys off actual inputs.
+function holidayStyle(a, days) {
+  const p = a.party || {};
+  const under3 = (p.under3 || 0) > 0;
+  const youngKids = under3 || (p.kids || 0) > 0;
+  const thrill = a.intensity;
+  const rhythm = resolveRhythm(a);
+  const noRest = a.restDays === 'none';
+  const numRides = (a.rides || []).length;
+  const parkDays = days.filter(d => isParkName(d.park)).length;
+
+  if (thrill === 'all' && rhythm === 'rope' && noRest && (a.lightning === 'always' || a.lightning === 'smart')) {
+    return { name: 'Big Day Strategist', blurb: 'You came to do it all, and you have the stamina for it. This plan keeps the days long and the headliners front-loaded.' };
+  }
+  if (thrill === 'all' && numRides >= 4) {
+    return { name: 'Ride-Focused Planner', blurb: 'The headliners come first; everything else is built around protecting your shot at them.' };
+  }
+  if (thrill === 'calm' && (rhythm === 'morning' || rhythm === 'late' || !noRest)) {
+    return { name: 'Slow Magic Seeker', blurb: "You're here for the atmosphere, not the queue times. This plan protects the calm and skips the scramble." };
+  }
+  if (youngKids && (thrill === 'family' || thrill === 'calm' || thrill === 'split') && !noRest) {
+    return { name: 'Easygoing Family', blurb: 'Built around little legs and slower mornings, with proper downtime so no one melts down by day three.' };
+  }
+  if ((thrill === 'all' || thrill === 'family') && noRest && parkDays >= 5) {
+    return { name: 'Full-Throttle Explorer', blurb: 'No rest days and plenty of park time — this plan keeps the pace up while landing the big days in the right order.' };
+  }
+  return { name: 'Balanced Explorer', blurb: 'A bit of everything — thrills, downtime, and room to breathe. This plan balances the must-dos with the energy to enjoy them.' };
+}
+
+// Watch Outs — short, titled advisory blocks. Each fires only when the user's real inputs and the
+// generated plan warrant it. The Lightning Lane note only appears for "every day", so it never
+// contradicts the trip-shape card or the recommendation.
+function watchOuts(a, days) {
+  const out = [];
+  const p = a.party || {};
+  const under3 = (p.under3 || 0) > 0;
+  const youngKids = under3 || (p.kids || 0) > 0;
+  const rhythm = resolveRhythm(a);
+  const parkDays = days.filter(d => isParkName(d.park)).length;
+
+  if (a.lightning === 'always') {
+    out.push({ title: 'Lightning Lane', body: "You've opted for it every park day. It's the right call on your busiest days; on the quieter ones, standby lines may be short enough to skip." });
+  }
+  if (a.dining === 'full') {
+    out.push({ title: 'Table-service timing', body: "Sit-down meals most days is lovely — just keep them off your busiest park days, so a long lunch doesn't eat into your ride time." });
+  }
+  if (a.arrival === 'evening' || a.arrival === 'midday') {
+    out.push({ title: 'Arrival day', body: "Keep it light. The plan saves the full days for once you've landed and settled — don't force a big park day on top of travel." });
+  }
+  if (under3 && a.intensity === 'all') {
+    out.push({ title: 'Rider Swap', body: "Big coasters with an under-3 means leaning on Rider Swap. Plan for it on those days so no one's left waiting." });
+  }
+  if (a.property === 'off' && rhythm === 'split') {
+    out.push({ title: 'Park hopping', body: "Mid-day returns are tough off-property — the transit eats the day. Staying in one park usually beats hopping." });
+  }
+  if (parkDays >= 7 && a.restDays === 'none') {
+    out.push({ title: 'Pacing', body: "Plenty of park time here — the real risk is overpacking it. With no rest day, the back half can drag; even a half pool morning resets everyone." });
+  } else if (a.restDays === 'none' && youngKids && parkDays >= 5) {
+    out.push({ title: 'Energy', body: "Young kids and no rest day on a longer trip — the second half is where energy unravels. A half-day off usually saves it." });
+  }
+  return out.slice(0, 3);
+}
+
+// Trip Shape — the plan's profile at a glance, straight from the answers and the built plan.
+function tripShape(a, days) {
+  const parkDays = days.filter(d => isParkName(d.park)).length;
+  const cards = [];
+  cards.push({ label: 'Park days', value: String(parkDays) });
+  cards.push({ label: 'Pace', value: a.intensity === 'all' ? 'Full-on' : a.intensity === 'calm' ? 'Relaxed' : 'Balanced' });
+  cards.push({ label: 'Lightning Lane', value: a.lightning === 'always' ? 'Every park day' : a.lightning === 'none' ? 'Not buying' : a.lightning === 'smart' ? 'Where it counts' : "We'll advise" });
+  cards.push({ label: 'Dining', value: a.dining === 'full' ? 'Sit-down most days' : a.dining === 'qs' ? 'Counter-service' : a.dining === 'mix' ? 'A few standouts' : "We'll advise" });
+  cards.push({ label: 'Downtime', value: a.restDays === 'none' ? 'No rest days' : a.restDays === 'middle' ? 'A mid-trip rest' : a.restDays === 'spread' ? 'Regular pauses' : "We'll place them" });
+  cards.push({ label: 'Where you stay', value: a.property === 'on' ? (a.resort || 'On-property') : 'Off-property' });
+  cards.push({ label: 'Ride focus', value: a.intensity === 'all' ? 'All the headliners' : a.intensity === 'family' ? 'Family rides' : a.intensity === 'calm' ? 'Calm rides & shows' : 'A mix' });
+  return cards;
+}
+
 function generateStrategy(a, days) {
   const PARKS = ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'];
   const isPark = (p) => PARKS.includes(p);
@@ -2665,8 +2780,8 @@ function generateSummary(a, days) {
   const peakDay = days && days.length ? days.reduce((max, d) => (d.crowd || 0) > (max.crowd || 0) ? d : max, days[0]) : null;
   let lead;
   if (avgCrowd === null) lead = `A ${numDays}-day plan built around your party.`;
-  else if (avgCrowd <= 4) lead = `You've picked a quiet week — that changes the maths. Lightning Lane matters less, rope drop matters less, and you can afford to be lazy in the afternoons.`;
-  else if (avgCrowd >= 7) lead = `You're going during a busy week. Strategy matters more than usual. Every recommendation below assumes you're committed to early starts.`;
+  else if (avgCrowd <= 4) lead = `Your dates fall in a quieter week — that changes the maths. Lightning Lane matters less, rope drop matters less, and you can afford to be lazy in the afternoons.`;
+  else if (avgCrowd >= 7) lead = `Your dates fall in a busier week, so strategy matters more than usual. Every recommendation below assumes you're committed to early starts.`;
   else lead = `Your week is a moderate-crowd window — the kind where good planning genuinely separates a great trip from a mediocre one.`;
   let structure;
   if (hasYoungKids && numDays >= 4) structure = `We've front-loaded Magic Kingdom while energy is highest, paired the bigger parks with quieter days, and kept the early and late days light.`;
