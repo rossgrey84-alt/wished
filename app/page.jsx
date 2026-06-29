@@ -935,7 +935,7 @@ function RidesStep({ value, onChange }) {
 
 function ExtrasStep({ hopper, evenings, onHopper, onEvenings }) {
   const hopperOpts = [
-    { v: 'yes', label: 'Yes, park hopper', sub: 'Switch parks after 2pm. ~$80/person extra.' },
+    { v: 'yes', label: 'Yes, park hopper', sub: 'Hop between parks any time, once you\u2019ve entered your first. ~$80/person extra.' },
     { v: 'no', label: 'No, single park per day', sub: 'Standard ticket.' },
     { v: 'unsure', label: 'Recommend', sub: "We'll tell you whether it's worth it." },
   ];
@@ -2396,7 +2396,7 @@ function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEven
       'Magic Kingdom': "Cooler and lit up at night — ride Seven Dwarfs, Space Mountain and Big Thunder as queues drop, then the Happily Ever After fireworks to close.",
       'Hollywood Studios': "Galaxy's Edge lit up after dark — ride Rise of the Resistance or Tower of Terror in the final hour, and Fantasmic if it's running.",
     }[splitEveningPark] || "A fresh park for the evening.";
-    return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — the Park Hopper add-on on your tickets lets you switch parks from 2pm.`;
+    return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — the Park Hopper add-on on your tickets lets you hop over once you've tapped into your first park.`;
   }
   if (isRepeatVisit && (hopper === 'yes' || hopper === 'unsure')) {
     const hopTarget = pickEveningHopTarget(park, resort);
@@ -2849,7 +2849,7 @@ function generateActions(a, days) {
   const numDays = typeof a.days === 'number' ? a.days : 4;
   const actions = [];
   actions.push({ category: 'Tickets', what: 'Buy park tickets via Undercover Tourist', when: 'Anytime — saves 3-5% versus Disney direct' });
-  if (a.hopper === 'yes') actions.push({ category: 'Tickets', what: 'Add Park Hopper to your tickets', when: 'Adds ~$80/person but lets you switch parks after 2pm' });
+  if (a.hopper === 'yes') actions.push({ category: 'Tickets', what: 'Add Park Hopper to your tickets', when: 'Adds ~$80/person — hop between parks any time once you\u2019ve entered your first' });
   else if (a.hopper === 'unsure') {
     const recommendHopper = numDays <= 4 || a.evenings === 'late' || onProperty;
     actions.push({
@@ -2968,7 +2968,7 @@ function generateTips(a) {
   tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot you can keep changing it. Book the easiest available ride just to start the clock, then modify it upward as better times appear. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
   tips.push({ title: 'Arrive 45-60 minutes before posted opening', body: "If you show up at the official opening time, you're already late — the rope-drop advantage is gone. Magic Kingdom is worst for this because you park at the TTC and still have a monorail or ferry to go. Build in the extra hop." });
   tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and the restaurants are quieter anyway." });
-  tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. If your ticket includes Memory Maker or you're a resort guest, they're free — always check the app before paying at a kiosk." });
+  tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. They're only free to download if you've added Memory Maker (or it's included in your package) — otherwise you can view them in the app but pay to download. Always check there before buying prints at a kiosk." });
   tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes and the crowds flee. A £1 poncho from home turns a downpour into the quietest, fastest hour of your day." });
 
   return tips;
