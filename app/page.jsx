@@ -1430,7 +1430,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
                     {/* Daily tip */}
                     <div className="mt-7 p-4 bg-stone-100/70" style={{ borderLeft: '2px solid #9a7b2e' }}>
-                      <div className="text-xs tracking-[0.2em] uppercase mb-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Insider tip</div>
+                      <div className="text-xs tracking-[0.2em] uppercase mb-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Insider tip{isParkName(d.park) ? ` · ${d.park}` : ''}</div>
                       <div className="text-stone-700 leading-relaxed text-sm" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{dailyTip}</div>
                     </div>
 
@@ -2148,6 +2148,12 @@ function softPenalty(park, dayIdx, numDays, a, hasYoungKids) {
   if (isArrival && (park === 'Magic Kingdom' || park === 'Hollywood Studios')) {
     if (a.experience !== 'returning' || hasYoungKids) penalty += 3;
   }
+  // Animal Kingdom closes earliest of the four (often 6-7pm), so it's wasted on a partial arrival
+  // day (evening/midday) — you'd reach it as it shuts. Push it strongly to a full day instead.
+  if (isArrival && park === 'Animal Kingdom') {
+    const arrival = a.arrival || 'morning';
+    penalty += (arrival === 'evening' || arrival === 'midday') ? 50 : 4;
+  }
   if (isDeparture && (park === 'Magic Kingdom' || park === 'Hollywood Studios')) penalty += 2;
   if (park === 'Magic Kingdom' && dayIdx === 1) penalty -= 1.5;
   if (hasYoungKids && park === 'Magic Kingdom' && dayIdx === 1) penalty -= 0.5;
@@ -2380,10 +2386,10 @@ function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEven
   if (splitEveningPark) {
     const reason = {
       'EPCOT': "Ride Test Track or Frozen Ever After on the way in, then dinner around World Showcase and the nighttime show to finish.",
-      'Magic Kingdom': "Cooler and lit up at night — ride Seven Dwarfs and the mountains as queues drop, then Happily Ever After to close.",
+      'Magic Kingdom': "Cooler and lit up at night — ride Seven Dwarfs, Space Mountain and Big Thunder as queues drop, then the Happily Ever After fireworks to close.",
       'Hollywood Studios': "Galaxy's Edge lit up after dark — ride Rise of the Resistance or Tower of Terror in the final hour, and Fantasmic if it's running.",
     }[splitEveningPark] || "A fresh park for the evening.";
-    return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — tap in with your Park Hopper (valid after 2pm).`;
+    return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — the Park Hopper add-on on your tickets lets you switch parks from 2pm.`;
   }
   if (isRepeatVisit && (hopper === 'yes' || hopper === 'unsure')) {
     const hopTarget = pickEveningHopTarget(park, resort);
