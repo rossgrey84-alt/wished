@@ -1,20 +1,42 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, Users, Sparkles, Hotel, Zap, Clock, Gauge, Compass, RotateCcw, Copy, Printer, Check } from 'lucide-react';
+import posthog from 'posthog-js';
 
-// ---- Lightweight, cookieless analytics ----
-// Anonymous funnel + completion tracking. No SDK, no cookies, no storage: a per-load
-// random ID means each session is a fresh anonymous user, so there is nothing to consent
-// to. Every event flows through track() — to swap providers later, change ONLY this function.
+// ---- Analytics (PostHog) ----
+// Only the named MVP funnel events, fired explicitly through track(). Autocapture, automatic
+// pageviews and session recording are all OFF — we send exactly the events we choose, nothing
+// else. UTM params + a derived source are registered once as super properties, so every event
+// carries them. Persistence is localStorage only (no cookies). Invisible to users.
 //
-// To go live: set NEXT_PUBLIC_POSTHOG_KEY (your phc_ project token) as an env var in Vercel.
-// With no key set, events just log to the console — safe in dev, silent no-op risk in prod,
-// so don't forget the env var.
-const ANALYTICS_ENDPOINT = 'https://eu.i.posthog.com/i/v0/e/';
-const ANALYTICS_ID = (() => {
-  try { return crypto.randomUUID(); }
-  catch { return 'anon-' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
-})();
+// Requires two Vercel env vars: NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN and NEXT_PUBLIC_POSTHOG_HOST.
+// With no token set, track() is a silent no-op — safe in dev.
+let phReady = false;
+function initAnalytics() {
+  if (phReady || typeof window === 'undefined') return;
+  const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com';
+  if (!token) return;
+  try {
+    posthog.init(token, {
+      api_host: host,
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: true,
+      disable_session_recording: true,
+      persistence: 'localStorage',
+    });
+    const q = new URLSearchParams(window.location.search);
+    const utm = {};
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(k => {
+      const v = q.get(k); if (v) utm[k] = v;
+    });
+    let source = utm.utm_source || 'direct';
+    try { if (!utm.utm_source && document.referrer) source = new URL(document.referrer).hostname; } catch {}
+    posthog.register({ ...utm, source });
+    phReady = true;
+  } catch { /* never throw from analytics */ }
+}
 // ---- Shareable plan links ----
 // The whole plan is generated from the answers, so we never need a database: we pack the
 // answers (and any pinned days) into the URL itself. A shared link reopens the exact same
@@ -41,22 +63,7 @@ const STEP_NAMES = {
 };
 function track(event, properties = {}) {
   if (typeof window === 'undefined') return; // browser only
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) { console.log('[analytics]', event, properties); return; }
-  try {
-    fetch(ANALYTICS_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true, // still sends if fired as the page navigates/unloads
-      body: JSON.stringify({
-        api_key: key,
-        event,
-        distinct_id: ANALYTICS_ID,
-        properties: { ...properties, $process_person_profile: false }, // anonymous: no person profile
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch(() => {}); // a failed beacon must never affect the user
-  } catch { /* never throw from analytics */ }
+  try { if (phReady) posthog.capture(event, properties); } catch { /* never throw from analytics */ }
 }
 
 // ---- The Wished star ----
@@ -143,7 +150,7 @@ export default function DisneyPlanner() {
 
   // ---- Analytics: landing view + completion ----
   const planFiredRef = useRef(false);
-  useEffect(() => { track('landing_viewed'); }, []); // once per session
+  useEffect(() => { initAnalytics(); track('homepage_viewed'); }, []); // once per session
   // Reopen a shared plan: if the URL carries ?plan=, decode it and jump straight to the plan.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -168,15 +175,22 @@ export default function DisneyPlanner() {
     } else {
       tripDays = a.days === 'custom' ? a.customDays : a.days;
     }
-    track('plan_generated', {
+    const parkDays = a.days === 'custom' ? a.customDays : a.days;
+    const props = {
+      park_days: tripDays || parkDays || null,
+      pace: a.intensity || null,
+      resort_type: a.property || null,
+      lightning_lane_preference: a.lightning || null,
       trip_days: tripDays,
       party_total: a.party.adults + a.party.teens + a.party.kids + a.party.under3,
       party_adults: a.party.adults, party_teens: a.party.teens, party_kids: a.party.kids, party_under3: a.party.under3,
-      experience: a.experience, intensity: a.intensity, rhythm: a.rhythm,
+      intensity: a.intensity, rhythm: a.rhythm,
       property: a.property, lightning: a.lightning, dining: a.dining,
       hopper: a.hopper, evenings: a.evenings, rides_selected: a.rides?.length || 0,
       rest_days: a.restDays, water_park: a.waterParkInterest,
-    });
+    };
+    track('questionnaire_completed', props);
+    track('at_a_glance_viewed', props);
   }, [step]);
 
   // Default the park-days count from the trip dates the user already entered, so they don't
@@ -201,8 +215,8 @@ export default function DisneyPlanner() {
     setAnswers(prev => ({ ...prev, dates: { start, end } }));
 
   const next = () => {
-    if (step === 0) track('questionnaire_started');
-    else if (step >= 1 && step <= totalSteps) track('step_completed', { step, step_name: STEP_NAMES[step] });
+    if (step === 0) { track('build_my_plan_clicked'); track('questionnaire_started'); }
+    else if (step >= 1 && step <= totalSteps) track('question_answered', { question_step: step, question_id: STEP_NAMES[step] });
     if (step === totalSteps) {
       setRevealing(true);
       setTimeout(() => setRevealing(false), 1600);
@@ -1083,11 +1097,19 @@ function SelectCard({ selected, onClick, title, sub }) {
 function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
   const days = generateStubDays(answers, pinnedDays);
   const [expandedDays, setExpandedDays] = useState({ 0: true });
+  const fullPlanFiredRef = useRef(false);
+  const markFullPlanViewed = () => {
+    if (fullPlanFiredRef.current) return;
+    fullPlanFiredRef.current = true;
+    track('full_plan_viewed');
+  };
 
   const toggleExpand = (dayIdx) => {
+    markFullPlanViewed();
     setExpandedDays(prev => ({ ...prev, [dayIdx]: !prev[dayIdx] }));
   };
   const expandAll = () => {
+    markFullPlanViewed();
     const all = {};
     days.forEach((_, i) => { all[i] = true; });
     setExpandedDays(all);
@@ -1245,6 +1267,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
               <button
                 key={i}
                 onClick={() => {
+                  markFullPlanViewed();
                   setExpandedDays(prev => ({ ...prev, [i]: true }));
                   if (typeof document !== 'undefined') {
                     const el = document.getElementById(`day-${i}`);
