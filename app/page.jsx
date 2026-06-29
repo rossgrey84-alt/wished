@@ -1190,9 +1190,11 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         <p className="text-lg text-stone-600 leading-relaxed max-w-2xl italic mb-5" style={{ fontFamily: 'Georgia, serif' }}>
           {holidayStyle(answers, days).blurb}
         </p>
-        <p className="text-lg text-stone-700 leading-relaxed max-w-2xl">
-          {generateSummary(answers, days)}
-        </p>
+        {generateSummary(answers, days).map((para, i) => (
+          <p key={i} className="text-lg text-stone-700 leading-relaxed max-w-2xl mb-4 last:mb-0">
+            {para}
+          </p>
+        ))}
       </div>
 
       <div className="mb-16">
@@ -1312,6 +1314,11 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           <span>AM morning · MID midday · EVE evening</span>
           <span className="inline-flex items-center gap-1"><WishStar size={9} color="#9a7b2e" /> LL = Lightning Lane recommended</span>
         </div>
+        {answers.lightning !== 'none' && (
+          <p className="mt-4 text-sm text-stone-500 leading-relaxed max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
+            New to Lightning Lane? <span className="text-stone-600">Multi Pass</span> books ride-skips through the day; <span className="text-stone-600">Single Pass</span> is a paid extra for the biggest headliners. <a href="/lightning-lane" className="underline decoration-stone-300 underline-offset-2 hover:text-stone-900" style={{ color: '#9a7b2e' }}>Read the Lightning Lane guide →</a>
+          </p>
+        )}
       </div>
 
       <div className="border-t border-stone-300 pt-12 mb-12">
@@ -2702,10 +2709,10 @@ function tripShape(a, days) {
   const parkDays = days.filter(d => isParkName(d.park)).length;
   const cards = [];
   cards.push({ label: 'Park days', value: String(parkDays) });
-  cards.push({ label: 'Pace', value: a.intensity === 'all' ? 'Full-on' : a.intensity === 'calm' ? 'Relaxed' : 'Balanced' });
+  cards.push({ label: 'Pace', value: a.intensity === 'all' ? 'High energy' : a.intensity === 'calm' ? 'Relaxed' : 'Balanced' });
   cards.push({ label: 'Lightning Lane', value: a.lightning === 'always' ? 'Every park day' : a.lightning === 'none' ? 'Not buying' : a.lightning === 'smart' ? 'Where it counts' : "We'll advise" });
-  cards.push({ label: 'Dining', value: a.dining === 'full' ? 'Sit-down most days' : a.dining === 'qs' ? 'Counter-service' : a.dining === 'mix' ? 'A few standouts' : "We'll advise" });
-  cards.push({ label: 'Downtime', value: a.restDays === 'none' ? 'No rest days' : a.restDays === 'middle' ? 'A mid-trip rest' : a.restDays === 'spread' ? 'Regular pauses' : "We'll place them" });
+  cards.push({ label: 'Dining', value: a.dining === 'full' ? 'Sit-down most days' : a.dining === 'qs' ? 'Quick-service' : a.dining === 'mix' ? 'A few standouts' : "We'll advise" });
+  cards.push({ label: 'Downtime', value: a.restDays === 'none' ? 'No rest days' : a.restDays === 'middle' ? 'A mid-trip rest' : a.restDays === 'spread' ? 'Built-in breaks' : "We'll place them" });
   cards.push({ label: 'Where you stay', value: a.property === 'on' ? (a.resort || 'On-property') : 'Off-property' });
   cards.push({ label: 'Ride focus', value: a.intensity === 'all' ? 'All the headliners' : a.intensity === 'family' ? 'Family rides' : a.intensity === 'calm' ? 'Calm rides & shows' : 'A mix' });
   return cards;
@@ -2823,7 +2830,17 @@ function generateSummary(a, days) {
     brace = `Your toughest day is ${peakDate ? peakDate + ' at ' : ''}${peakDay.park} — be at the gate before opening.`;
   } else if (noLightning && (allCoasters || splitIntensity)) brace = `You're skipping the Lightning Lane upcharge — but it makes rope drop non-negotiable on the headliner days.`;
   else if (onProperty) brace = `Your on-property stay gives you Early Theme Park Entry — use it every day you're not deliberately taking it slow.`;
-  return [lead, structure, brace].filter(Boolean).join(' ');
+
+  // Honest burnout reassurance — only for ambitious plans that genuinely keep downtime. If they
+  // chose all-out with no rest at all, we don't claim to protect them; the watch-out flags it instead.
+  let reassurance = '';
+  if (allCoasters && a.restDays !== 'none') {
+    reassurance = `It's an ambitious plan, but it still protects a proper rest day, so no one burns out halfway through.`;
+  } else if (allCoasters && onProperty) {
+    reassurance = `It's an ambitious plan, but the midday resort breaks are built in, so it doesn't run everyone into the ground by mid-week.`;
+  }
+
+  return [lead, [structure, brace].filter(Boolean).join(' '), reassurance].filter(Boolean);
 }
 
 function generateActions(a, days) {
