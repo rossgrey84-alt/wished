@@ -1380,7 +1380,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         )}
                       </div>
                       <div className="text-2xl text-stone-900 italic leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-                        {d.park}
+                        {dayLabel(d.park, answers)}
                       </div>
                       <div className="text-stone-600 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
                         <span className="text-xs tracking-[0.15em] uppercase not-italic mr-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Today</span>
@@ -2233,17 +2233,13 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   }
   if (park === 'Water park') {
     const openPref = a.waterParkOpen;
-    let parkName = 'water park';
-    let openNote = '';
-    if (openPref === 'typhoon') { parkName = 'Typhoon Lagoon'; }
-    else if (openPref === 'blizzard') { parkName = 'Blizzard Beach'; }
-    else if (openPref === 'both') { parkName = 'water park (your pick — both open)'; }
-    else if (openPref === 'unsure') {
-      parkName = 'water park';
-      openNote = " Check Disney's calendar to confirm which one (Typhoon Lagoon or Blizzard Beach) is open for your dates.";
-    }
+    let headline;
+    if (openPref === 'typhoon') headline = "Typhoon Lagoon day — the one you told us was open. Different rhythm, different rules.";
+    else if (openPref === 'blizzard') headline = "Blizzard Beach day — the one you told us was open. Different rhythm, different rules.";
+    else if (openPref === 'both') headline = "Water park day. Because you said both are open, take your pick on the day — Typhoon Lagoon for theming, Blizzard Beach for slides.";
+    else headline = "Water park day. You weren't sure which is open for your dates, so check Disney's calendar to confirm Typhoon Lagoon or Blizzard Beach before you go.";
     return {
-      headline: `${parkName.charAt(0).toUpperCase() + parkName.slice(1)} day. Different rhythm, different rules.${openNote}`,
+      headline,
       morning: "Arrive around opening — slides queue up faster than rides do, so the early-morning advantage is real. Wear swimwear under your clothes.",
       afternoon: "Stay through the heat — the water keeps everyone cool and queues are shortest mid-afternoon. If you want a park evening as well, leave the water park by around 4pm. Cabana hire (~$300+) is the splurge that makes this a different experience.",
       evening: "Most families are done after a water park — out by 4-5pm for a quieter night. But if energy's holding up, you've left in time to hop to a park for the evening: dinner and a nighttime show is very doable.",
@@ -2602,8 +2598,8 @@ function daySlots(day, a, idx, total) {
   }
   if (p === 'Rest day') {
     const t = a.restDayType;
-    if (t === 'morning') return { am: { label: 'Slow morning', kind: 'rest' }, mid: { label: 'Pool / resort', kind: 'rest' }, eve: { label: 'Easy evening', kind: 'free' }, ll: false, note: null };
-    if (t === 'pool')    return { am: { label: 'Pool day', kind: 'rest' }, mid: { label: 'Resort', kind: 'rest' }, eve: { label: 'Resort evening', kind: 'free' }, ll: false, note: null };
+    if (t === 'morning') return { am: { label: 'Slow morning', kind: 'rest' }, mid: { label: 'Pool / resort', kind: 'rest' }, eve: { label: 'Evening park', kind: 'free' }, ll: false, note: null };
+    if (t === 'evening') return { am: { label: 'Morning park', kind: 'free' }, mid: { label: 'Out by 1pm', kind: 'free' }, eve: { label: 'Pool / resort', kind: 'rest' }, ll: false, note: null };
     return { am: { label: 'Rest', kind: 'rest' }, mid: { label: 'Disney Springs', kind: 'springs' }, eve: { label: 'Easy evening', kind: 'free' }, ll: false, note: null };
   }
   if (p === 'Water park') {
@@ -2642,6 +2638,19 @@ function daySlots(day, a, idx, total) {
 
 // Holiday Style archetype — a memorable identity for the plan, derived from the real answer mix
 // (thrill, pace, downtime, party). Never a random label; every branch keys off actual inputs.
+// Display label for a day's title. The internal park value stays 'Rest day' so the engine and
+// sequencing are untouched — we only change what the user sees, so a morning-rest-plus-evening-park
+// day is never mislabelled as a full rest day.
+function dayLabel(park, a) {
+  if (park === 'Rest day') {
+    const t = (a && a.restDayType) || 'full';
+    if (t === 'morning') return 'Recovery Day';                // rest morning, optional evening park
+    if (t === 'evening') return 'Morning Park, Afternoon Off'; // park morning, rest afternoon
+    return 'Rest Day';                                         // full rest
+  }
+  return park;
+}
+
 function holidayStyle(a, days) {
   const p = a.party || {};
   const under3 = (p.under3 || 0) > 0;
