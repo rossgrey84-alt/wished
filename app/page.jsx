@@ -65,6 +65,10 @@ function track(event, properties = {}) {
   if (typeof window === 'undefined') return; // browser only
   try { if (phReady) posthog.capture(event, properties); } catch { /* never throw from analytics */ }
 }
+function identifyUser(email) {
+  if (typeof window === 'undefined') return;
+  try { if (phReady) posthog.identify(email); } catch { /* never throw from analytics */ }
+}
 
 // ---- The Wished star ----
 // The four-point gold star is Wished's brand signal — it always means "Wished's hand in the
@@ -114,6 +118,98 @@ function WishLockup({ height = 22, dark = false, className = '' }) {
       <text x="0" y="0" fontFamily="Georgia, serif" fontStyle="italic" fontWeight="500" fontSize="64" letterSpacing="8" fill={color}>WISHED</text>
       <path d="M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2 Z" fill={starColor} transform="translate(49,-54)" />
     </svg>
+  );
+}
+
+// Email capture — shown after the at-a-glance, framed as delivery not marketing. Captures via
+// PostHog (identify + email_submitted) regardless, and POSTs to a Formspree-style endpoint when
+// NEXT_PUBLIC_FORMSPREE_ENDPOINT is set, attaching the person's plan link and archetype.
+function EmailCapture({ answers, pinnedDays, days }) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | sending | done | dismissed
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const submit = async () => {
+    if (!valid || status === 'sending') return;
+    setStatus('sending');
+    const clean = email.trim();
+    const style = holidayStyle(answers, days).name;
+    const parkDays = days.filter(d => isParkName(d.park)).length;
+    let planUrl = '';
+    try { planUrl = `${window.location.origin}/?plan=${encodePlan(answers, pinnedDays)}`; } catch {}
+    try {
+      identifyUser(clean);
+      track('email_submitted', { holiday_style: style, park_days: parkDays, pace: answers.intensity, resort_type: answers.property, lightning_lane_preference: answers.lightning });
+    } catch {}
+    try {
+      const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
+      if (endpoint) {
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            email: clean,
+            holiday_style: style,
+            park_days: parkDays,
+            dates: `${answers.dates?.start || '?'} to ${answers.dates?.end || '?'}`,
+            plan_link: planUrl,
+          }),
+        });
+      }
+    } catch { /* analytics already captured it; never block the user */ }
+    setStatus('done');
+  };
+
+  if (status === 'dismissed') return null;
+
+  if (status === 'done') {
+    return (
+      <div className="border border-stone-200 bg-stone-50/50 px-6 py-8 mb-12 text-center">
+        <div className="flex justify-center mb-3"><WishStar size={18} /></div>
+        <div className="text-xl text-stone-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>Your plan is saved.</div>
+        <p className="text-stone-600 max-w-md mx-auto leading-relaxed">We'll send your full strategy now, then remind you when key planning decisions are coming up.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-stone-200 bg-stone-50/50 px-6 py-8 mb-12">
+      <div className="max-w-xl">
+        <div className="text-xs tracking-[0.3em] uppercase mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Keep this plan</div>
+        <h3 className="text-2xl md:text-3xl text-stone-900 mb-2" style={{ fontFamily: 'Georgia, serif' }}>Save your full Wished strategy</h3>
+        <p className="text-stone-600 mb-5 leading-relaxed">We'll send your personalised plan, plus timely reminders for dining, Lightning Lane and final checks before you travel.</p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submit(); }}
+            placeholder="you@example.com"
+            aria-label="Email address"
+            className="flex-1 border border-stone-300 bg-white px-4 py-3 text-stone-900 focus:outline-none focus:border-stone-500"
+            style={{ fontFamily: 'Georgia, serif' }}
+          />
+          <button
+            onClick={submit}
+            disabled={!valid || status === 'sending'}
+            className="px-6 py-3 text-white tracking-wide uppercase text-sm disabled:opacity-40 transition-opacity whitespace-nowrap"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif', backgroundColor: '#9a7b2e' }}
+          >
+            {status === 'sending' ? 'Saving…' : 'Save My Wished Plan'}
+          </button>
+        </div>
+        <div className="mt-5">
+          <button
+            onClick={() => { try { track('email_skipped'); } catch {} setStatus('dismissed'); }}
+            className="text-sm text-stone-400 hover:text-stone-600 underline underline-offset-2"
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          >
+            Continue without saving
+          </button>
+          <p className="mt-3 text-sm text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No spam. Just useful reminders for this trip.</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1320,6 +1416,8 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           </p>
         )}
       </div>
+
+      <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
 
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="flex items-center justify-between mb-8">
