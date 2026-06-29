@@ -167,7 +167,14 @@ function EmailCapture({ answers, pinnedDays, days }) {
       <div className="border border-stone-200 bg-stone-50/50 px-6 py-8 mb-12 text-center">
         <div className="flex justify-center mb-3"><WishStar size={18} /></div>
         <div className="text-xl text-stone-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>Your plan is saved.</div>
-        <p className="text-stone-600 max-w-md mx-auto leading-relaxed">We'll send your full strategy now, then remind you when key planning decisions are coming up.</p>
+        <p className="text-stone-600 max-w-md mx-auto leading-relaxed">We've emailed your full strategy. Your detailed day-by-day plan continues below.</p>
+        <button
+          onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('day-by-day'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
+          className="mt-4 text-sm tracking-wide uppercase hover:opacity-70 transition-opacity"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
+        >
+          Continue to day-by-day plan ↓
+        </button>
       </div>
     );
   }
@@ -1201,7 +1208,9 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
   };
 
   const toggleExpand = (dayIdx) => {
+    const opening = !expandedDays[dayIdx];
     markFullPlanViewed();
+    if (opening) track('view_full_day_clicked', { day: dayIdx + 1, park: days[dayIdx]?.park });
     setExpandedDays(prev => ({ ...prev, [dayIdx]: !prev[dayIdx] }));
   };
   const expandAll = () => {
@@ -1360,7 +1369,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           {days.map((d, i) => {
             const s = daySlots(d, answers, i, days.length);
             const rows = [['AM', s.am], ['MID', s.mid], ['EVE', s.eve]];
-            const crowdColour = d.crowd == null ? null : (d.crowd <= 3 ? '#65a30d' : d.crowd <= 5 ? '#a16207' : d.crowd <= 7 ? '#c2410c' : '#991b1b');
+            const crowdColour = d.crowd == null ? null : (d.crowd <= 3 ? '#65a30d' : d.crowd <= 5 ? '#a16207' : d.crowd <= 7 ? '#c2410c' : '#9a4034');
             return (
               <button
                 key={i}
@@ -1419,8 +1428,8 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
 
-      <div className="border-t border-stone-300 pt-12 mb-12">
-        <div className="flex items-center justify-between mb-8">
+      <div id="day-by-day" className="border-t border-stone-300 pt-12 mb-12">
+        <div className="flex items-center justify-between mb-2">
           <div className="text-xs tracking-[0.3em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
             Day by day
           </div>
@@ -1435,6 +1444,9 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
             {days.some((_, i) => !expandedDays[i]) ? 'Expand all' : 'Collapse all'}
           </button>
         </div>
+        <p className="text-sm text-stone-500 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
+          Open each day for morning, midday and evening guidance.
+        </p>
         <div className="space-y-4">
           {days.map((d, i) => {
             const isPinned = pinnedDays[i] !== undefined;
@@ -1491,7 +1503,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
                   >
                     <span className="text-base leading-none">{isExpanded ? '−' : '+'}</span>
-                    {isExpanded ? 'Close day' : 'Tap to see full day'}
+                    {isExpanded ? 'Close day' : 'View full day'}
                   </div>
                 </button>
 
@@ -1592,10 +1604,10 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       <div className="border-t border-stone-300 pt-12 mb-12">
         <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Things I wished I'd known
+          The non-obvious stuff
         </div>
         <p className="text-sm text-stone-600 mb-10 max-w-xl italic" style={{ fontFamily: 'Georgia, serif' }}>
-          The non-obvious things that make the difference — the stuff you only learn after you've been.
+          The small decisions that make a big difference once you're there.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
           {generateTips(answers).map((t, i) => (
@@ -1682,8 +1694,8 @@ function checkPinWarning(dayIdx, pinnedPark, day, a) {
 }
 
 function CrowdDot({ level }) {
-  const label = level <= 3 ? 'Quiet' : level <= 5 ? 'Moderate' : level <= 7 ? 'Busy' : 'Very busy';
-  const colour = level <= 3 ? '#65a30d' : level <= 5 ? '#a16207' : level <= 7 ? '#c2410c' : '#991b1b';
+  const label = level <= 3 ? 'Quieter' : level <= 5 ? 'Moderate' : level <= 7 ? 'Busy' : 'Peak crowds';
+  const colour = level <= 3 ? '#65a30d' : level <= 5 ? '#a16207' : level <= 7 ? '#c2410c' : '#9a4034';
   return (
     <span className="inline-flex items-center gap-1.5 text-xs not-italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       <span className="inline-block w-2 h-2 rounded-full" style={{ background: colour }} />
