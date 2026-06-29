@@ -2282,7 +2282,7 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   }
 
   const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
-  const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport });
+  const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport, isRepeatVisit });
   const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
   const partyNight = park === 'Magic Kingdom' ? partyKind(date) : null; // 'halloween' | 'christmas' | null
   const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort, partyNight });
@@ -2329,12 +2329,20 @@ function buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungK
   return crowdLead;
 }
 
-function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport }) {
+function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport, isRepeatVisit }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return "Travel and check in. Get to the resort, drop bags, eat early.";
     if (arrival === 'midday') return "Travel. Land, get to the resort, drop bags as fast as you can.";
   }
   if (isArrival) return "Get to the park around lunch. Don't try to do too much.";
+  if (isRepeatVisit) {
+    const llTargets = getLLTargets(park, wantedRides);
+    const llLine = useLLToday && llTargets.length ? ` Save Multi Pass for ${llTargets.slice(0, 2).join(' and ')}.` : '';
+    if (park === 'Magic Kingdom') return `You cleared the mountains last time, so ease into this one — a relaxed start for anything worth repeating, or Tron if it beat you on day one.${llLine}`;
+    if (park === 'EPCOT') return `Future World's headliners are behind you, so this morning is for the pavilions and rides you skipped — and the festival booths before they get busy.${llLine}`;
+    if (park === 'Hollywood Studios') return `You've done Galaxy's Edge once, so go straight back for Rise of the Resistance at rope drop if it got away, then re-ride your favourites.${llLine}`;
+    return `Second time here — you know the layout now, so head for whatever you ran out of time for. A calmer start than the first visit.${llLine}`;
+  }
   const ropeDropTargets = getRopeDropTargets(park, wantedRides);
   const llTargets = getLLTargets(park, wantedRides);
   if (lateStart) return `Late start today — arrive around 11am. Skip rope drop and use Multi Pass for ${llTargets.slice(0,2).join(' and ') || 'the headliners'}.`;
@@ -2370,6 +2378,12 @@ function buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useL
     return splitEveningPark
       ? `Back to the resort from about 1pm — pool, lunch, a proper break through the hottest hours. You'll head out again this evening, but to ${splitEveningPark} rather than back here.`
       : "Pool break from 1 to 4pm. Park is at its hottest and busiest now.";
+  }
+  if (isRepeatVisit) {
+    if (park === 'Magic Kingdom') return "Afternoon is for the corners you skipped — Tom Sawyer Island, the People Mover, a slower wander through the lands you rushed first time.";
+    if (park === 'EPCOT') return "Work the World Showcase pavilions you didn't reach last time — and on this visit, actually sit down to eat in one.";
+    if (park === 'Hollywood Studios') return "Re-ride your favourites as the afternoon lines settle, and catch a show you missed — Indiana Jones or the Frozen sing-along.";
+    if (park === 'Animal Kingdom') return "A slower afternoon — the trails and the river boat you didn't reach, at the park's own unhurried pace.";
   }
   if (park === 'Magic Kingdom') return useLLToday ? "Use the rest of your Multi Pass slots mid-afternoon. Sit-down lunch around 2pm." : "Hit the lower-demand rides — Mansion, Pirates, the People Mover. Sit-down lunch around 2pm.";
   if (park === 'EPCOT') return "Afternoon is World Showcase time. Walk it counter-clockwise from Mexico.";
