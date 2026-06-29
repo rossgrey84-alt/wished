@@ -1331,10 +1331,53 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                   <div>
                     <div className="text-xl md:text-2xl text-stone-900 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>{s.decision}</div>
                     <p className="text-stone-600 leading-relaxed mt-1.5 max-w-xl">{s.why}</p>
+                    {s.buyList && (
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 max-w-xl">
+                        <div>
+                          <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Buy Lightning Lane on</div>
+                          <ul className="space-y-1">
+                            {s.buyList.map((x, j) => <li key={j} className="text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>{x}</li>)}
+                          </ul>
+                        </div>
+                        {s.skipList && s.skipList.length > 0 && (
+                          <div>
+                            <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Skip it on</div>
+                            <ul className="space-y-1">
+                              {s.skipList.map((x, j) => <li key={j} className="text-stone-500" style={{ fontFamily: 'Georgia, serif' }}>{x}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        );
+      })()}
+
+      {(() => {
+        const teaser = generateTips(answers).slice(0, 3);
+        if (!teaser.length) return null;
+        return (
+          <div className="mb-16 border border-stone-200 bg-stone-50/40 px-6 py-6">
+            <div className="text-base text-stone-900 mb-4" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>A few things we'd want you to know before you go</div>
+            <ul className="space-y-2.5 mb-5">
+              {teaser.map((t, i) => (
+                <li key={i} className="text-stone-700 leading-snug flex gap-2.5 max-w-2xl">
+                  <span className="text-stone-300 shrink-0">—</span>
+                  <span>{t.title}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('non-obvious-stuff'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
+              className="text-xs tracking-[0.18em] uppercase hover:opacity-70 transition-opacity"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
+            >
+              See all Wished tips ↓
+            </button>
           </div>
         );
       })()}
@@ -1425,6 +1468,17 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           </p>
         )}
       </div>
+
+      {(() => {
+        const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
+        if (!(epcotCount >= 3 && answers.property === 'on' && isResortSkyliner(answers.resort))) return null;
+        return (
+          <div className="mb-12 border-l-2 pl-4 max-w-2xl" style={{ borderColor: '#d8d1c2' }}>
+            <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Why EPCOT appears often</div>
+            <p className="text-stone-700 leading-relaxed">Because you're staying at {answers.resort}, EPCOT is a low-friction evening park via the Skyliner. We're using it for relaxed evenings rather than loading every day with a full park push — it's a feature of where you're staying, not the planner overusing one park.</p>
+          </div>
+        );
+      })()}
 
       <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
 
@@ -1602,7 +1656,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         </div>
       </div>
 
-      <div className="border-t border-stone-300 pt-12 mb-12">
+      <div id="non-obvious-stuff" className="border-t border-stone-300 pt-12 mb-12">
         <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           The non-obvious stuff
         </div>
@@ -2880,7 +2934,7 @@ function generateStrategy(a, days) {
   if (firstPark) {
     let why;
     if (firstPark.park === 'EPCOT' && mkDay && mkDay !== firstPark) {
-      why = "World Showcase is at its best in the evening, so it's a calm, scenic opener — and it lets Magic Kingdom wait for a full day.";
+      why = "It's a low-pressure opener — World Showcase is at its best in the evening — so you ease in here and save the heavier ride days for once you're settled and ready to go harder.";
     } else if (firstParkIdx === 0 && (a.arrival === 'evening' || a.arrival === 'midday')) {
       why = "It eases you in on a partial arrival day, without spending your highest-energy hours on the biggest park.";
     } else {
@@ -2917,14 +2971,14 @@ function generateStrategy(a, days) {
       why: `It earns its keep most on ${parks}; on the quieter days you'd be fine without it.`,
     });
   } else {
-    const dayList = llDays.map(d => llDayRef(d, days)).filter(Boolean);
     const parks = [...new Set(llDays.map(d => d.park))];
-    const dayPhrase = dayList.length === 1
-      ? dayList[0]
-      : dayList.slice(0, -1).join(', ') + ' and ' + dayList[dayList.length - 1];
+    const buyList = llDays.map(d => `Day ${days.indexOf(d) + 1} · ${d.park}`);
+    const skipList = days.filter(d => !llDays.includes(d)).map(d => `Day ${days.indexOf(d) + 1}`);
     out.push({
-      decision: `Buy Lightning Lane on ${dayPhrase} — skip it the rest.`,
+      decision: "Buy Lightning Lane only on the days that earn it.",
       why: `On ${parks.join(' and ')} the crowds and ride layout earn it back; elsewhere rope drop gets you the same rides for free.`,
+      buyList,
+      skipList,
     });
   }
 
