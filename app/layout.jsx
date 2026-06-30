@@ -2,7 +2,7 @@ import "./globals.css";
 
 const SITE = "https://getwished.com";
 const TITLE = "Wished — Walt Disney World, the way you wished";
-const DESCRIPTION = "A tailored Disney World trip plan in thirteen questions.";
+const DESCRIPTION = "A tailored Disney World trip plan in twelve questions.";
 
 export const metadata = {
   metadataBase: new URL(SITE),
@@ -17,7 +17,7 @@ export const metadata = {
     description: DESCRIPTION,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
   },
