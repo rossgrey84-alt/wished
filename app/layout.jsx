@@ -1,8 +1,26 @@
 import "./globals.css";
 
+const SITE = "https://getwished.com";
+const TITLE = "Wished — Walt Disney World, the way you wished";
+const DESCRIPTION = "A tailored Disney World trip plan in thirteen questions.";
+
 export const metadata = {
-  title: "Wished — Walt Disney World, the way you wished",
-  description: "A tailored Disney World trip plan in thirteen questions.",
+  metadataBase: new URL(SITE),
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Wished",
+    url: SITE,
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }) {
