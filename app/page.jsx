@@ -380,7 +380,7 @@ export default function DisneyPlanner() {
       fontFamily: 'Georgia, "Times New Roman", serif',
     }}>
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        <header className="mb-8 md:mb-16 no-print">
+        <header className="mb-6 md:mb-16 no-print">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
             <WishLockup height={22} />
             {step > 0 && step <= totalSteps ? (
@@ -506,7 +506,7 @@ function Intro({ onStart }) {
         <div className="text-xs tracking-[0.28em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Free Walt Disney World planner
         </div>
-        <h1 className="text-4xl md:text-6xl leading-[1.06] text-stone-900 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <h1 className="text-3xl md:text-5xl leading-[1.08] text-stone-900 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
           Walt Disney World, planned around your family. In minutes.
         </h1>
         <p className="text-base md:text-lg text-stone-600 max-w-xl leading-relaxed mb-7">
@@ -515,7 +515,7 @@ function Intro({ onStart }) {
 
         <div className="border bg-white/50 rounded-md px-4 py-3.5 max-w-sm mb-8" style={{ borderColor: '#e2dccd' }}>
           <div className="text-[10px] tracking-[0.18em] uppercase mb-2.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</div>
-          {[['Day 1', 'Magic Kingdom \u00b7 early entry'], ['Day 2', 'Rest & pool \u00b7 slow start'], ['Day 3', 'EPCOT \u00b7 Lightning Lane order']].map(([d, t]) => (
+          {[['Day 1', 'Magic Kingdom \u00b7 early entry'], ['Day 2', 'Rest & pool \u00b7 slow start'], ['Day 3', 'EPCOT \u00b7 Lightning Lane plan']].map(([d, t]) => (
             <div key={d} className="flex justify-between py-0.5 text-sm text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>
               <span style={{ color: '#9a7b2e' }}>{d}</span><span>{t}</span>
             </div>
