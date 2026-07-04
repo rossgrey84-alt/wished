@@ -489,8 +489,8 @@ function Intro({ onStart }) {
     <>
       <button
         onClick={onStart}
-        className="w-full sm:w-auto px-10 py-4 text-sm tracking-[0.2em] uppercase transition-all hover:opacity-90"
-        style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#1c1917', color: '#f4f1ea' }}
+        className="w-full sm:w-auto px-10 py-4 text-sm tracking-[0.2em] uppercase transition-transform hover:-translate-y-0.5"
+        style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#1c1917', color: '#f4f1ea', borderRadius: '12px', boxShadow: '0 3px 0 rgba(109,87,32,0.9), 0 14px 26px -8px rgba(28,25,23,0.42)' }}
       >
         Build my plan, free
       </button>
@@ -513,13 +513,27 @@ function Intro({ onStart }) {
           A tailored day-by-day plan, built around your family, dates and pace. No spreadsheets. No guesswork.
         </p>
 
-        <div className="border bg-white/50 rounded-md px-4 py-3.5 max-w-sm mb-8" style={{ borderColor: '#e2dccd' }}>
-          <div className="text-[10px] tracking-[0.18em] uppercase mb-2.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</div>
-          {[['Day 1', 'Magic Kingdom \u00b7 early entry'], ['Day 2', 'Rest & pool \u00b7 slow start'], ['Day 3', 'EPCOT \u00b7 Lightning Lane plan']].map(([d, t]) => (
-            <div key={d} className="flex justify-between py-0.5 text-sm text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>
-              <span style={{ color: '#9a7b2e' }}>{d}</span><span>{t}</span>
+        <div className="rounded-lg px-4 py-4 max-w-sm mb-8" style={{ border: '1px solid #e2dccd', background: 'rgba(255,255,255,0.55)', boxShadow: '0 10px 30px -14px rgba(28,25,23,0.28)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</span>
+            <span className="text-[9px] tracking-[0.16em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Sneak peek</span>
+          </div>
+          <div className="grid mb-1.5" style={{ gridTemplateColumns: '30px 1fr 1fr 1fr', gap: '4px' }}>
+            <span></span>
+            {['AM', 'MID', 'EVE'].map(h => <span key={h} className="text-[8px] tracking-[0.12em] uppercase text-stone-400 text-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{h}</span>)}
+          </div>
+          {[
+            { day: 'D1', cells: [['Magic Kingdom', '#ece9f5'], ['Rest & pool', '#f0ede6'], ['Fireworks', '#f4e9ec']] },
+            { day: 'D2', cells: [['EPCOT', '#e6eef4'], ['Lunch break', '#f0ede6'], ['Skyliner', '#e6eef4']] },
+          ].map(row => (
+            <div key={row.day} className="grid mb-1" style={{ gridTemplateColumns: '30px 1fr 1fr 1fr', gap: '4px' }}>
+              <span className="text-[11px] self-center" style={{ fontFamily: 'Georgia, serif', color: '#9a7b2e' }}>{row.day}</span>
+              {row.cells.map(([label, bg], i) => (
+                <span key={i} className="text-[9px] leading-tight text-center text-stone-700 rounded px-1 py-1.5 flex items-center justify-center" style={{ background: bg, fontFamily: 'Helvetica, Arial, sans-serif', minHeight: '34px' }}>{label}</span>
+              ))}
             </div>
           ))}
+          <div className="text-[9px] text-stone-400 mt-2.5 italic" style={{ fontFamily: 'Georgia, serif' }}>Your real plan covers every day of your trip.</div>
         </div>
 
         {CTA}
@@ -541,7 +555,6 @@ function Intro({ onStart }) {
       </div>
 
       <div className="border-t border-stone-300 pt-16 mb-20">
-        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Why families use it</div>
         <p className="text-2xl md:text-3xl text-stone-800 italic leading-snug max-w-2xl mb-6" style={{ fontFamily: 'Georgia, serif' }}>
           The Disney trip you won&rsquo;t second-guess.
         </p>
@@ -571,7 +584,7 @@ function Intro({ onStart }) {
           </div>
           <div>
             <div className="text-sm tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>The wrong fit</div>
-            <p className="text-stone-600 leading-relaxed">Annual passholders and frequent visitors who already know their way around. You don&rsquo;t need us &mdash; and you probably already disagree with half our calls.</p>
+            <p className="text-stone-600 leading-relaxed">Annual passholders and regular visitors who already know their way around. You&rsquo;ve got your own rhythm &mdash; this is built for people doing it for the first time.</p>
           </div>
         </div>
       </div>
