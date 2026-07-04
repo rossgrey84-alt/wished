@@ -518,15 +518,15 @@ function Intro({ onStart }) {
             <span className="text-[10px] tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</span>
             <span className="text-[9px] tracking-[0.16em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Sneak peek</span>
           </div>
-          <div className="grid mb-1.5" style={{ gridTemplateColumns: '30px 1fr 1fr 1fr', gap: '4px' }}>
+          <div className="grid mb-1.5" style={{ gridTemplateColumns: '46px 1fr 1fr 1fr', gap: '4px' }}>
             <span></span>
             {['AM', 'MID', 'EVE'].map(h => <span key={h} className="text-[8px] tracking-[0.12em] uppercase text-stone-400 text-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{h}</span>)}
           </div>
           {[
-            { day: 'D1', cells: [['Magic Kingdom', '#ece9f5'], ['Rest & pool', '#f0ede6'], ['Fireworks', '#f4e9ec']] },
-            { day: 'D2', cells: [['EPCOT', '#e6eef4'], ['Lunch break', '#f0ede6'], ['Skyliner', '#e6eef4']] },
+            { day: 'Day 1', cells: [['Magic Kingdom', '#ece9f5'], ['Rest & pool', '#f0ede6'], ['Fireworks', '#f4e9ec']] },
+            { day: 'Day 2', cells: [['EPCOT', '#e6eef4'], ['Lunch break', '#f0ede6'], ['Skyliner', '#e6eef4']] },
           ].map(row => (
-            <div key={row.day} className="grid mb-1" style={{ gridTemplateColumns: '30px 1fr 1fr 1fr', gap: '4px' }}>
+            <div key={row.day} className="grid mb-1" style={{ gridTemplateColumns: '46px 1fr 1fr 1fr', gap: '4px' }}>
               <span className="text-[11px] self-center" style={{ fontFamily: 'Georgia, serif', color: '#9a7b2e' }}>{row.day}</span>
               {row.cells.map(([label, bg], i) => (
                 <span key={i} className="text-[9px] leading-tight text-center text-stone-700 rounded px-1 py-1.5 flex items-center justify-center" style={{ background: bg, fontFamily: 'Helvetica, Arial, sans-serif', minHeight: '34px' }}>{label}</span>
@@ -1401,10 +1401,13 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
       {/* At a glance — the whole trip as a morning / midday / evening grid. Doubles as page one
           of the printed PDF, and as the shareable summary. */}
-      <div className="plan-summary mb-12">
-        <div className="text-xs tracking-[0.4em] uppercase mb-5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+      <div id="at-a-glance" className="plan-summary mb-12">
+        <div className="text-xs tracking-[0.4em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           At a glance
         </div>
+        <p className="text-sm text-stone-500 mb-6 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
+          Your whole trip in one view. Tap any day to open its full morning-to-night plan.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {days.map((d, i) => {
             const s = daySlots(d, answers, i, days.length);
@@ -1415,13 +1418,14 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                 key={i}
                 onClick={() => {
                   markFullPlanViewed();
+                  track('view_full_day_clicked', { day: i + 1, park: d.park });
                   setExpandedDays(prev => ({ ...prev, [i]: true }));
                   if (typeof document !== 'undefined') {
                     const el = document.getElementById(`day-${i}`);
                     if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
                   }
                 }}
-                className="text-left border border-stone-200 bg-stone-50/40 p-3 hover:bg-stone-100/60 transition-colors flex flex-col"
+                className="text-left border border-stone-200 bg-stone-50/40 p-3 hover:bg-stone-100/60 hover:border-stone-300 transition-colors flex flex-col"
               >
                 <div className="flex items-center justify-between mb-3 gap-2">
                   <span className="text-base text-stone-900 shrink-0" style={{ fontFamily: 'Georgia, serif' }}>Day {i + 1}</span>
@@ -1430,6 +1434,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                       {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
                     </span>
                     {crowdColour && <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: crowdColour }} />}
+                    <ChevronRight size={14} className="text-stone-300 shrink-0" />
                   </span>
                 </div>
                 {rows.map(([labelText, slot]) => {
@@ -1608,13 +1613,22 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
 
                     {/* Change controls */}
                     <div className="mt-6">
-                      <button
-                        onClick={() => setEditingDay(editingDay === i ? null : i)}
-                        className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
-                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-                      >
-                        {editingDay === i ? '× Close' : 'Change this day →'}
-                      </button>
+                      <div className="flex items-center gap-5">
+                        <button
+                          onClick={() => setEditingDay(editingDay === i ? null : i)}
+                          className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
+                          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        >
+                          {editingDay === i ? '× Close' : 'Change this day →'}
+                        </button>
+                        <button
+                          onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('at-a-glance'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
+                          className="text-xs tracking-wider uppercase text-stone-400 hover:text-stone-700 transition-colors"
+                          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        >
+                          ↑ Back to overview
+                        </button>
+                      </div>
                       {editingDay === i && (
                         <div className="mt-4 p-5 bg-white border border-stone-300">
                           <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
