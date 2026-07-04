@@ -380,7 +380,7 @@ export default function DisneyPlanner() {
       fontFamily: 'Georgia, "Times New Roman", serif',
     }}>
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        <header className="mb-16 no-print">
+        <header className="mb-8 md:mb-16 no-print">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
             <WishLockup height={22} />
             {step > 0 && step <= totalSteps ? (
@@ -485,71 +485,75 @@ export default function DisneyPlanner() {
 }
 
 function Intro({ onStart }) {
+  const CTA = (
+    <>
+      <button
+        onClick={onStart}
+        className="w-full sm:w-auto px-10 py-4 text-sm tracking-[0.2em] uppercase transition-all hover:opacity-90"
+        style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#1c1917', color: '#f4f1ea' }}
+      >
+        Build my plan, free
+      </button>
+      <div className="mt-4 text-xs tracking-[0.1em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        No sign-up to start &middot; Takes about four minutes
+      </div>
+    </>
+  );
+
   return (
     <div>
-      <div className="space-y-8 mb-24">
-        <div className="text-xs tracking-[0.4em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Walt Disney World, the way you wished
+      <div className="mb-20">
+        <div className="text-xs tracking-[0.28em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+          Free Walt Disney World planner
         </div>
-        <h1 className="text-5xl md:text-7xl leading-[0.95] text-stone-900 font-normal italic">
-          Wish it.<br />We'll plan<br />the rest.
+        <h1 className="text-4xl md:text-6xl leading-[1.06] text-stone-900 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
+          Walt Disney World, planned around your family. In minutes.
         </h1>
-        <p className="text-lg text-stone-700 max-w-xl leading-relaxed">
-          Answer twelve quick questions and get a personalised Walt Disney World
-          strategy — which parks on which days, where to stay, how to handle Lightning
-          Lane, and what to book before you travel. No spreadsheets, no hour-by-hour
-          itineraries. Just a plan built around your family.
+        <p className="text-base md:text-lg text-stone-600 max-w-xl leading-relaxed mb-7">
+          A tailored day-by-day plan, built around your family, dates and pace. No spreadsheets. No guesswork.
         </p>
-        <p className="text-xl md:text-2xl text-stone-800 italic leading-snug max-w-xl" style={{ fontFamily: 'Georgia, serif' }}>
-          Most Disney tools hand every family the same answer. Wished is built around yours.
-        </p>
-        <button
-          onClick={onStart}
-          className="mt-8 px-10 py-4 text-sm tracking-[0.25em] uppercase transition-all hover:opacity-90"
-          style={{
-            fontFamily: 'Helvetica, Arial, sans-serif',
-            background: '#1c1917',
-            color: '#f4f1ea',
-          }}
-        >
-          Build my plan →
-        </button>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs tracking-[0.12em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> Free</span>
-          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> No sign-up</span>
-          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> About four minutes</span>
-          <span className="flex items-center gap-1.5"><Check size={13} style={{ color: '#9a7b2e' }} /> Updated for 2026</span>
+
+        <div className="border bg-white/50 rounded-md px-4 py-3.5 max-w-sm mb-8" style={{ borderColor: '#e2dccd' }}>
+          <div className="text-[10px] tracking-[0.18em] uppercase mb-2.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</div>
+          {[['Day 1', 'Magic Kingdom \u00b7 early entry'], ['Day 2', 'Rest & pool \u00b7 slow start'], ['Day 3', 'EPCOT \u00b7 Lightning Lane order']].map(([d, t]) => (
+            <div key={d} className="flex justify-between py-0.5 text-sm text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>
+              <span style={{ color: '#9a7b2e' }}>{d}</span><span>{t}</span>
+            </div>
+          ))}
+        </div>
+
+        {CTA}
+      </div>
+
+      <div className="border-t border-stone-300 pt-16 mb-20">
+        <div className="text-xs tracking-[0.3em] uppercase mb-8" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>How it works</div>
+        <div className="space-y-6 max-w-xl">
+          {[['1', 'Tell us about your trip.', 'Your dates, who is coming, your resort and pace.'], ['2', 'Get your Wished strategy.', 'We turn it into a smart, ordered plan \u2014 not a generic schedule.'], ['3', 'Save your day-by-day plan.', 'Yours to keep, tweak and follow.']].map(([n, t, s]) => (
+            <div key={n} className="flex gap-4">
+              <div className="shrink-0 text-lg" style={{ fontFamily: 'Georgia, serif', color: '#9a7b2e' }}>{n}</div>
+              <div>
+                <div className="text-stone-900 text-lg" style={{ fontFamily: 'Georgia, serif' }}>{t}</div>
+                <div className="text-stone-600 text-sm leading-relaxed">{s}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="border-t border-stone-300 pt-16 mb-24">
-        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Why this exists
-        </div>
-        <p className="text-2xl md:text-3xl text-stone-800 italic leading-snug max-w-2xl mb-8" style={{ fontFamily: 'Georgia, serif' }}>
-          Every party is different — ages, budget, pace, what you actually want
-          from the trip. The existing tools either give you a one-size-fits-all
-          schedule, or a forum thread you have to read for six hours.
+      <div className="border-t border-stone-300 pt-16 mb-20">
+        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Why families use it</div>
+        <p className="text-2xl md:text-3xl text-stone-800 italic leading-snug max-w-2xl mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+          The Disney trip you won&rsquo;t second-guess.
         </p>
         <p className="text-stone-700 max-w-2xl leading-relaxed">
-          We built this because nobody else takes all the variables and gives
-          you a plan that lands. Crowd patterns, your party shape, where
-          you're staying, the rides you actually want to do, the events
-          happening that week — they all change the right answer. This tool
-          works through them and tells you what to do.
+          No one-size-fits-all itineraries. No expensive mistakes you only spot too late. No more evenings lost to forums and spreadsheets &mdash; just a plan built around your family, from people who have worked out what actually matters.
         </p>
       </div>
 
-      <div className="border-t border-stone-300 pt-16 mb-24">
-        <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Every recommendation considers
-        </div>
-        <p className="text-stone-700 max-w-2xl leading-relaxed mb-8">
-          This isn't a list of tips you have to assemble yourself. It's a plan that weighs
-          everything that actually changes the right answer:
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3 max-w-2xl">
-          {['Your resort', 'Party ages', 'Park Hopper', 'Crowd forecasts', 'Events that week', 'Lightning Lane', 'Budget', 'Rest days', 'Ride priorities'].map(item => (
+      <div className="border-t border-stone-300 pt-16 mb-20">
+        <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>What you get</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 max-w-xl">
+          {['A park order that actually works', 'Built-in rest days', 'Lightning Lane guidance', 'A full day-by-day plan', 'The non-obvious local tips'].map(item => (
             <div key={item} className="flex items-center gap-2 text-stone-700">
               <Check size={14} style={{ color: '#9a7b2e' }} />
               <span style={{ fontFamily: 'Georgia, serif' }}>{item}</span>
@@ -558,45 +562,25 @@ function Intro({ onStart }) {
         </div>
       </div>
 
-      <div className="border-t border-stone-300 pt-16 mb-24">
-        <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Who this is for
-        </div>
+      <div className="border-t border-stone-300 pt-16 mb-20">
+        <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Who this is for</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div>
-            <div className="text-sm tracking-[0.2em] uppercase text-stone-900 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>
-              The right fit
-            </div>
-            <p className="text-stone-700 leading-relaxed">
-              First-time visitors, or families who've been once or twice and want to do it properly next time. We help you make the calls that aren't obvious — which park on which day, when Lightning Lane earns its keep, what to book and what to skip.
-            </p>
+            <div className="text-sm tracking-[0.2em] uppercase text-stone-900 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>The right fit</div>
+            <p className="text-stone-700 leading-relaxed">First-timers, or families who have been once and want to do it properly next time. We make the calls that aren&rsquo;t obvious &mdash; which park on which day, when Lightning Lane earns its keep, what to book and what to skip.</p>
           </div>
           <div>
-            <div className="text-sm tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>
-              The wrong fit
-            </div>
-            <p className="text-stone-600 leading-relaxed">
-              Annual passholders, frequent visitors, or anyone who already knows their way around. You don't need us — and you probably already disagree with half our recommendations.
-            </p>
+            <div className="text-sm tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 600 }}>The wrong fit</div>
+            <p className="text-stone-600 leading-relaxed">Annual passholders and frequent visitors who already know their way around. You don&rsquo;t need us &mdash; and you probably already disagree with half our calls.</p>
           </div>
         </div>
       </div>
 
       <div className="border-t border-stone-300 pt-16 text-center">
-        <p className="text-stone-600 mb-8 max-w-md mx-auto" style={{ fontFamily: 'Georgia, serif' }}>
-          Ready to plan?
+        <p className="text-stone-600 mb-6 max-w-md mx-auto italic" style={{ fontFamily: 'Georgia, serif' }}>
+          Wish it. We&rsquo;ll plan the rest.
         </p>
-        <button
-          onClick={onStart}
-          className="px-10 py-4 text-sm tracking-[0.25em] uppercase transition-all hover:opacity-90"
-          style={{
-            fontFamily: 'Helvetica, Arial, sans-serif',
-            background: '#1c1917',
-            color: '#f4f1ea',
-          }}
-        >
-          Build my plan →
-        </button>
+        {CTA}
       </div>
     </div>
   );
