@@ -894,8 +894,8 @@ function PropertyStep({ property, resort, transport, onProperty, onResort, onTra
   const transportOpts = [
     { v: 'rental', label: 'Rental car', sub: 'Drive to each park. Most flexible, but parking is $30/day.' },
     { v: 'rideshare', label: 'Uber/Lyft', sub: 'No parking hassle, but adds £15-30 per trip.' },
-    { v: 'mears', label: 'Mears Connect or shuttle', sub: 'Cheaper but less flexible — fixed schedule.' },
-    { v: 'walk', label: 'Walking distance hotel', sub: 'Some parks walkable, others need a quick drive.' },
+    { v: 'mears', label: 'Mears Connect', sub: 'Paid park shuttle — cheaper than rideshare, but a fixed schedule.' },
+    { v: 'walk', label: 'Hotel shuttle', sub: 'Free at many off-site hotels — but times are fixed, so plan around them.' },
   ];
   return (
     <div>
@@ -1469,6 +1469,10 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         )}
       </div>
 
+      <p className="text-center text-sm text-stone-500 mb-12" style={{ fontFamily: 'Georgia, serif' }}>
+        This is your overview — your detailed day-by-day plan continues below.
+      </p>
+
       {(() => {
         const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
         if (!(epcotCount >= 3 && answers.property === 'on' && isResortSkyliner(answers.resort))) return null;
@@ -1534,7 +1538,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         )}
                         {isPinned && (
                           <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                            Pinned
+                            Locked
                           </span>
                         )}
                         {d.flag && (
@@ -1642,7 +1646,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                               className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2"
                               style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                             >
-                              Remove pin · let us decide
+                              Unlock · let us decide
                             </button>
                           )}
                         </div>
@@ -2523,7 +2527,7 @@ function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProp
     if (offPropertyTransport === 'rental') transportLine = `Drive to ${park} — leave 75 minutes before park opening.`;
     else if (offPropertyTransport === 'rideshare') transportLine = `Book the Uber 45 minutes before park opening.`;
     else if (offPropertyTransport === 'mears') transportLine = `Mears Connect drops at the parks 30-45 minutes before opening.`;
-    else if (offPropertyTransport === 'walk') transportLine = `Walk or hotel shuttle to ${park} — leave 60 minutes before opening.`;
+    else if (offPropertyTransport === 'walk') transportLine = `Hotel shuttle to ${park} — check the schedule and leave early; shuttle times are fixed.`;
   }
   let prose = transportLine ? `${transportLine} ` : `Be at the gate ${onProperty ? '30' : '45'} minutes before opening. `;
   prose += `${onProperty ? 'Use Early Theme Park Entry — ' : ''}rope drop targets: ${ropeDropTargets.join(', then ')}.`;
