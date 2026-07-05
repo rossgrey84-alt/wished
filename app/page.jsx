@@ -1197,6 +1197,7 @@ function SelectCard({ selected, onClick, title, sub }) {
 function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
   const days = generateStubDays(answers, pinnedDays);
   const [expandedDays, setExpandedDays] = useState({ 0: true });
+  const [showWhy, setShowWhy] = useState(false);
   const fullPlanFiredRef = useRef(false);
   const markFullPlanViewed = () => {
     if (fullPlanFiredRef.current) return;
@@ -1292,11 +1293,33 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         <p className="text-lg text-stone-600 leading-relaxed max-w-2xl italic mb-5" style={{ fontFamily: 'Georgia, serif' }}>
           {holidayStyle(answers, days).blurb}
         </p>
-        {generateSummary(answers, days).map((para, i) => (
-          <p key={i} className="text-lg text-stone-700 leading-relaxed max-w-2xl mb-4 last:mb-0">
-            {para}
-          </p>
-        ))}
+        {(() => {
+          const summary = generateSummary(answers, days);
+          if (!summary.length) return null;
+          return (
+            <>
+              <p className="text-lg text-stone-700 leading-relaxed max-w-2xl">{summary[0]}</p>
+              {summary.length > 1 && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowWhy(v => !v)}
+                    className="text-xs tracking-[0.2em] uppercase hover:opacity-70 transition-opacity"
+                    style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
+                  >
+                    {showWhy ? '− Why this plan' : '+ Why this plan'}
+                  </button>
+                  {showWhy && (
+                    <div className="mt-3 space-y-4">
+                      {summary.slice(1).map((para, i) => (
+                        <p key={i} className="text-lg text-stone-700 leading-relaxed max-w-2xl">{para}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <div className="mb-16">
@@ -1406,7 +1429,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           At a glance
         </div>
         <p className="text-sm text-stone-500 mb-6 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
-          Your whole trip in one view. Tap any day to open its full morning-to-night plan.
+          This is your overview. Tap any day to jump to its full plan in the day-by-day section below.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {days.map((d, i) => {
@@ -1456,6 +1479,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     {s.note && <span className="text-[10px] italic text-stone-500" style={{ fontFamily: 'Georgia, serif' }}>{s.note}</span>}
                   </div>
                 )}
+                <span className="mt-3 text-[10px] tracking-[0.14em] uppercase self-end inline-flex items-center gap-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>View full day →</span>
               </button>
             );
           })}
@@ -1471,9 +1495,15 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         )}
       </div>
 
-      <p className="text-center text-sm text-stone-500 mb-12" style={{ fontFamily: 'Georgia, serif' }}>
-        This is your overview — your detailed day-by-day plan continues below.
-      </p>
+      <div className="text-center mb-12">
+        <button
+          onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('day-by-day'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
+          className="text-sm tracking-[0.14em] uppercase hover:opacity-70 transition-opacity"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
+        >
+          Jump to your detailed day-by-day plan ↓
+        </button>
+      </div>
 
       {(() => {
         const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
@@ -1540,12 +1570,12 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         )}
                         {isPinned && (
                           <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                            Locked
+                            Changed
                           </span>
                         )}
                         {d.flag && (
                           <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                            ⚑ Note
+                            ⚑ Event Note
                           </span>
                         )}
                       </div>
@@ -1572,7 +1602,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                   <div className="px-5 md:px-6 pb-6">
                     {warning && (
                       <div className="mb-5 p-4 bg-amber-50 border-l-2 border-amber-400 text-sm text-amber-900 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                        <div className="not-italic mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Heads up</div>
+                        <div className="not-italic mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Watch out</div>
                         {warning}
                       </div>
                     )}
@@ -1657,7 +1687,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                               className="text-xs tracking-wider uppercase text-stone-600 hover:text-stone-900 underline underline-offset-2"
                               style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                             >
-                              Unlock · let us decide
+                              Undo change · let us decide
                             </button>
                           )}
                         </div>
@@ -3174,7 +3204,11 @@ function generateTips(a) {
 
   // The genuine insider tier — specific, researched, the stuff that changes a trip.
   tips.push({ title: 'Watch the Magic Kingdom fireworks from Gaston\'s Tavern', body: "Everyone packs onto Main Street an hour early. Head behind the castle to the outdoor seating by Gaston's Tavern in New Fantasyland instead — you get a calm, unique view of the show without camping out for a spot, and you're near Seven Dwarfs for a near-walk-on right after." });
-  tips.push({ title: 'Off-site? Rope drop Frontierland, not Fantasyland', body: "Early Entry resort guests flood Fantasyland and Tomorrowland first. If you don't have Early Entry, head the opposite way to Frontierland or Adventureland at opening — Big Thunder and Tiana's Bayou Adventure will be near walk-ons while everyone else queues for Seven Dwarfs." });
+  if (a.property === 'off') {
+    tips.push({ title: 'Off-site? Rope drop Frontierland, not Fantasyland', body: "Early Entry resort guests flood Fantasyland and Tomorrowland first. If you don't have Early Entry, head the opposite way to Frontierland or Adventureland at opening — Big Thunder and Tiana's Bayou Adventure will be near walk-ons while everyone else queues for Seven Dwarfs." });
+  } else {
+    tips.push({ title: 'Use your Early Theme Park Entry every morning', body: "Staying on-property gets you into the parks 30 minutes before day guests — that half hour clears more headliners than any Lightning Lane. Be at the gate for it on your big days; skipping it wastes the single biggest perk of staying on-site." });
+  }
   tips.push({ title: 'Bundle your rope drop rides by location', body: "The first 60-90 minutes are worth more than any other part of the day — headliner waits run 50-70% shorter than midday. Don't crisscross the park: do Seven Dwarfs then Winnie the Pooh (both Fantasyland), or Space Mountain then Buzz (both Tomorrowland). You can clear 4-6 major rides before most people finish their first." });
   tips.push({ title: 'Use the Tangled bathrooms shortcut', body: "There's a hidden walkway by the Tangled-themed restrooms between Fantasyland and Liberty Square that locals use to cut across the park fast at rope drop. It's the quickest pivot if your first-choice ride is down when you arrive — and something always is." });
   tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot you can keep changing it. Book the easiest available ride just to start the clock, then modify it upward as better times appear. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
