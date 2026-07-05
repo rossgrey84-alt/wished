@@ -503,23 +503,23 @@ function Intro({ onStart }) {
   return (
     <div>
       <div className="mb-20">
-        <div className="text-xs tracking-[0.28em] uppercase mb-4" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+        <div className="text-xs tracking-[0.28em] uppercase mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Free Walt Disney World planner
         </div>
-        <h1 className="text-3xl md:text-5xl leading-[1.08] text-stone-900 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <h1 className="text-[1.6rem] leading-[1.12] md:text-5xl md:leading-[1.08] text-stone-900 mb-3" style={{ fontFamily: 'Georgia, serif' }}>
           Walt Disney World, planned around your family. In minutes.
         </h1>
-        <p className="text-base md:text-lg text-stone-600 max-w-xl leading-relaxed mb-7">
-          A tailored day-by-day plan, built around your family, dates and pace. No spreadsheets. No guesswork.
+        <p className="text-sm md:text-lg text-stone-600 max-w-xl leading-relaxed mb-5">
+          A tailored day-by-day plan for your family, dates and pace. No spreadsheets, no guesswork.
         </p>
 
-        <div className="rounded-lg max-w-sm mb-4 overflow-hidden" style={{ border: '1px solid #e2dccd', background: 'rgba(255,255,255,0.6)', boxShadow: '0 12px 34px -14px rgba(28,25,23,0.3)' }}>
-          <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+        <div className="rounded-lg max-w-sm mb-3 overflow-hidden" style={{ border: '1px solid #e2dccd', background: 'rgba(255,255,255,0.6)', boxShadow: '0 12px 34px -14px rgba(28,25,23,0.3)' }}>
+          <div className="px-5 pt-3.5 pb-1 flex items-center justify-between">
             <span className="text-[10px] tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</span>
             <span className="text-[9px] tracking-[0.16em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Sneak peek</span>
           </div>
-          <div className="relative px-5 pb-5">
-            <div className="text-[10px] tracking-[0.2em] uppercase mb-1.5 mt-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Day 1</div>
+          <div className="relative px-5 pb-4">
+            <div className="text-[10px] tracking-[0.2em] uppercase mb-1.5 mt-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Day 1</div>
             {[
               ['Morning', 'Magic Kingdom', 'Best first-day park', '#b6a6dd'],
               ['Midday', 'Rest & pool', 'Keeps everyone fresh', '#cbb98f'],
@@ -532,25 +532,12 @@ function Intro({ onStart }) {
                 <span className="text-[11px] text-stone-500 italic ml-auto text-right" style={{ fontFamily: 'Georgia, serif' }}>{r}</span>
               </div>
             ))}
-            <p className="text-[11px] text-stone-500 italic mt-2 mb-4 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>Ease in gently — and still end the day on Disney magic.</p>
-
-            <div className="text-[10px] tracking-[0.2em] uppercase mb-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Day 2</div>
-            {[
-              ['Morning', 'EPCOT', 'Ideal after a late night', '#9db8cf'],
-              ['Midday', 'Lunch & explore', 'A gentler pace', '#cbb98f'],
-            ].map(([t, p, r, dot]) => (
-              <div key={t} className="flex items-baseline gap-2 py-[3px]">
-                <span className="w-[52px] shrink-0 text-[8px] tracking-[0.12em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{t}</span>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0 self-center" style={{ background: dot }} />
-                <span className="text-[13px] text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>{p}</span>
-                <span className="text-[11px] text-stone-500 italic ml-auto text-right" style={{ fontFamily: 'Georgia, serif' }}>{r}</span>
-              </div>
-            ))}
-            <div className="pt-2 text-[11px] text-stone-400" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>Day 3 · Hollywood Studios…</div>
-            <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-14" style={{ background: 'linear-gradient(to bottom, rgba(252,251,247,0) 0%, rgba(252,251,247,0.92) 82%)' }} />
+            <p className="text-[11px] text-stone-500 italic mt-2 mb-1 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>Ease in gently — and still end the day on Disney magic.</p>
+            <div className="pt-1.5 text-[11px] text-stone-400" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>Day 2 · EPCOT, ideal after a late night…</div>
+            <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-12" style={{ background: 'linear-gradient(to bottom, rgba(252,251,247,0) 0%, rgba(252,251,247,0.92) 82%)' }} />
           </div>
         </div>
-        <p className="text-[13px] text-stone-500 max-w-sm mb-8 flex items-start gap-2 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
+        <p className="text-xs md:text-[13px] text-stone-500 max-w-sm mb-5 flex items-start gap-2 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
           <span style={{ color: '#9a7b2e' }}>✦</span>
           <span>Built around your children's ages, your hotel, arrival day and preferred pace.</span>
         </p>
