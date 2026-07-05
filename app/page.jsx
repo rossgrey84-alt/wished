@@ -536,13 +536,13 @@ function Intro({ onStart }) {
                 <WishStar size={12} />
                 <span className="text-[10px] tracking-[0.16em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Why this works</span>
               </div>
-              <p className="text-[12px] text-stone-700 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>You still get a Disney evening — but Magic Kingdom waits for your first full day, when everyone's rested.</p>
+              <p className="text-[12px] text-stone-700 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>You still get a Disney evening, but Magic Kingdom waits for your first full day, when everyone's rested.</p>
             </div>
           </div>
         </div>
         <p className="text-xs md:text-[13px] text-stone-500 max-w-sm mb-5 flex items-start gap-2 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
           <span style={{ color: '#9a7b2e' }}>✦</span>
-          <span>Your real plan adapts to your hotel, your children's ages, arrival time and pace.</span>
+          <span>Built around your hotel, children’s ages, arrival time and pace.</span>
         </p>
 
         {CTA}
