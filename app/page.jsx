@@ -144,15 +144,27 @@ function EmailCapture({ answers, pinnedDays, days }) {
     try {
       const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
       if (endpoint) {
+        const p = answers.party || {};
+        const partyStr = [
+          p.adults ? `${p.adults} adult${p.adults > 1 ? 's' : ''}` : null,
+          p.teens ? `${p.teens} teen${p.teens > 1 ? 's' : ''}` : null,
+          p.kids ? `${p.kids} child${p.kids > 1 ? 'ren' : ''}` : null,
+          p.under3 ? `${p.under3} under 3` : null,
+        ].filter(Boolean).join(', ');
+        const paceLabel = { all: 'High energy', family: 'Family pace', calm: 'Calm', split: 'Mixed party' }[answers.intensity] || '—';
         await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
+            _subject: `New Wished lead · ${style} · ${parkDays} park days`,
             email: clean,
-            holiday_style: style,
-            park_days: parkDays,
-            dates: `${answers.dates?.start || '?'} to ${answers.dates?.end || '?'}`,
-            plan_link: planUrl,
+            trip: `${parkDays} park days · ${answers.dates?.start || '?'} to ${answers.dates?.end || '?'}`,
+            party: partyStr || '—',
+            pace: paceLabel,
+            resort: answers.property === 'on' ? (answers.resort || 'On-property') : 'Off-property',
+            lightning: answers.lightning || '—',
+            plan_style: style,
+            open_their_plan: planUrl,
           }),
         });
       }
@@ -542,7 +554,7 @@ function Intro({ onStart }) {
         </div>
         <p className="text-xs md:text-[13px] text-stone-500 max-w-sm mb-5 flex items-start gap-2 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
           <span style={{ color: '#9a7b2e' }}>✦</span>
-          <span>Built around your hotel, children’s ages, arrival time and pace.</span>
+          <span>Your real plan adapts to your hotel, your children's ages, arrival time and pace.</span>
         </p>
 
         {CTA}
