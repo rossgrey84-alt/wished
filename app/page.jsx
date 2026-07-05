@@ -205,8 +205,8 @@ function EmailCapture({ answers, pinnedDays, days }) {
     <div className="border border-stone-200 bg-stone-50/50 px-6 py-8 mb-12">
       <div className="max-w-xl">
         <div className="text-xs tracking-[0.3em] uppercase mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Keep this plan</div>
-        <h3 className="text-2xl md:text-3xl text-stone-900 mb-2" style={{ fontFamily: 'Georgia, serif' }}>Save your full Wished strategy</h3>
-        <p className="text-stone-600 mb-5 leading-relaxed">We'll send your personalised plan, plus timely reminders for dining, Lightning Lane and final checks before you travel.</p>
+        <h3 className="text-2xl md:text-3xl text-stone-900 mb-2" style={{ fontFamily: 'Georgia, serif' }}>Email me this plan</h3>
+        <p className="text-stone-600 mb-5 leading-relaxed">We'll send your one-page Wished plan, the full day-by-day detail, and timely reminders before you travel.</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="email"
@@ -222,9 +222,9 @@ function EmailCapture({ answers, pinnedDays, days }) {
             onClick={submit}
             disabled={!valid || status === 'sending'}
             className="px-6 py-3 text-white tracking-wide uppercase text-sm disabled:opacity-40 transition-opacity whitespace-nowrap"
-            style={{ fontFamily: 'Helvetica, Arial, sans-serif', backgroundColor: '#9a7b2e' }}
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif', backgroundColor: '#1c1917' }}
           >
-            {status === 'sending' ? 'Saving…' : 'Save My Wished Plan'}
+            {status === 'sending' ? 'Sending…' : 'Send my Wished plan'}
           </button>
         </div>
         <div className="mt-5">
@@ -1457,10 +1457,10 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           of the printed PDF, and as the shareable summary. */}
       <div id="at-a-glance" className="plan-summary mb-12">
         <div className="text-xs tracking-[0.4em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          At a glance
+          Your one-page Wished plan
         </div>
         <p className="text-sm text-stone-500 mb-6 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
-          This is your overview. Tap any day to jump to its full plan in the day-by-day section below.
+          Your whole trip on one page. Tap any day to open its full plan in the day-by-day section below.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {days.map((d, i) => {
@@ -3225,7 +3225,7 @@ function generateDayTip(d, dayIndex, a) {
     'Magic Kingdom': "Peter Pan's Flight builds the longest queue for the least ride — do it at rope drop or via Multi Pass, never standby midday.",
     'EPCOT': "Walk World Showcase counter-clockwise from Mexico — you'll stay ahead of the crowd flowing the obvious way.",
     'Hollywood Studios': "Slinky Dog Dash is the hardest Multi Pass to get here — book it the moment your window opens, before anything else.",
-    'Animal Kingdom': "Flight of Passage builds the longest wait in all of Disney World — rope drop it or buy the Single Pass, full stop.",
+    'Animal Kingdom': "Flight of Passage builds one of the longest waits in all of Disney World — rope drop it or buy the Single Pass, full stop.",
   };
   return tips[park] || "Refresh the app for Lightning Lane drops — cancellations appear constantly through the day.";
 }
