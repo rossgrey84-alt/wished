@@ -513,24 +513,25 @@ function Intro({ onStart }) {
           A tailored day-by-day plan for your family, dates and pace. No spreadsheets, no guesswork.
         </p>
 
-        <div className="rounded-lg max-w-sm mb-3 overflow-hidden" style={{ border: '1px solid #e7ddc8', background: 'linear-gradient(180deg,#fefcf7 0%,#f8f3e8 100%)', boxShadow: '0 14px 36px -16px rgba(28,25,23,0.32)' }}>
+        <div className="rounded-lg max-w-sm mb-3 overflow-hidden" style={{ border: '1px solid #e7ddc8', background: 'linear-gradient(180deg,#fdfaf3 0%,#f6efe0 100%)', boxShadow: '0 14px 36px -16px rgba(28,25,23,0.32)' }}>
           <div className="px-5 pt-3.5 pb-2">
             <span className="text-[10px] tracking-[0.22em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Sample Wished strategy</span>
           </div>
           <div className="px-5 pb-4">
             <div className="text-[11px] tracking-[0.1em] uppercase mb-2 text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Day 1 · Arrival day</div>
             {[
-              ['Morning', 'Travel & arrive', 'Keep it light'],
-              ['Midday', 'Settle & pool', "Protect everyone's energy"],
-              ['Evening', 'EPCOT', 'An easy first park'],
-            ].map(([t, p, r]) => (
+              ['Morning', 'Travel & arrive', 'Keep it light', '#c9b48a'],
+              ['Midday', 'Settle & pool', "Protect everyone's energy", '#a9bfa2'],
+              ['Evening', 'EPCOT', 'An easy first park', '#a7b9cc'],
+            ].map(([t, p, r, dot]) => (
               <div key={t} className="flex items-baseline gap-3 py-[3px]">
                 <span className="w-[54px] shrink-0 text-[8px] tracking-[0.12em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{t}</span>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 self-center" style={{ background: dot }} />
                 <span className="text-[13px] text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>{p}</span>
                 <span className="text-[11px] text-stone-500 italic ml-auto text-right" style={{ fontFamily: 'Georgia, serif' }}>{r}</span>
               </div>
             ))}
-            <div className="mt-3 pt-3" style={{ borderTop: '1px solid #ece3d0' }}>
+            <div className="mt-3 px-3 py-2.5 rounded" style={{ background: 'rgba(154,123,46,0.07)', borderLeft: '2px solid #c9a94e' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <WishStar size={12} />
                 <span className="text-[10px] tracking-[0.16em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Why this works</span>
