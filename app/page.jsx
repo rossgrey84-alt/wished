@@ -1275,17 +1275,23 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
   const printPlan = () => {
     track('plan_printed');
     expandAll();                                  // open every day so the whole plan prints
-    setTimeout(() => window.print(), 200);
+    setTimeout(() => window.print(), 400);
   };
 
   return (
     <div>
       <style>{`
+        .print-footer { display: none; }
         @media print {
+          @page { margin: 14mm; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           #wished-root { background: #ffffff !important; }
-          .no-print { display: none !important; }
+          .no-print, .no-print * { display: none !important; }
           .plan-summary { break-after: page; page-break-after: always; }
-          .plan-day { break-inside: avoid; page-break-inside: avoid; }
+          .plan-day { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; }
+          .print-keep { break-inside: avoid; page-break-inside: avoid; }
+          .print-head { break-after: avoid; page-break-after: avoid; }
+          .print-footer { display: block !important; margin-top: 28px; padding-top: 14px; border-top: 1px solid #d6d3d1; text-align: center; font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.04em; color: #78716c; }
         }
       `}</style>
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300 no-print">
@@ -1372,7 +1378,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         if (!strategy.length) return null;
         return (
           <div className="mb-16">
-            <div className="text-xs tracking-[0.3em] uppercase mb-6" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
+            <div className="text-xs tracking-[0.3em] uppercase mb-6 print-head" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
               Wished recommends
             </div>
             <div className="space-y-6">
@@ -1510,7 +1516,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     {s.note && <span className="text-[10px] italic text-stone-500" style={{ fontFamily: 'Georgia, serif' }}>{s.note}</span>}
                   </div>
                 )}
-                <span className="mt-3 text-[10px] tracking-[0.14em] uppercase self-end inline-flex items-center gap-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>View full day →</span>
+                <span className="mt-3 text-[10px] tracking-[0.14em] uppercase self-end inline-flex items-center gap-1 no-print" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>View full day →</span>
               </button>
             );
           })}
@@ -1529,7 +1535,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       <div className="text-center mb-12">
         <button
           onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('day-by-day'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
-          className="text-sm tracking-[0.14em] uppercase hover:opacity-70 transition-opacity"
+          className="text-sm tracking-[0.14em] uppercase hover:opacity-70 transition-opacity no-print"
           style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
         >
           Jump to your detailed day-by-day plan ↓
@@ -1547,7 +1553,9 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         );
       })()}
 
-      <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
+      <div className="no-print">
+        <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
+      </div>
 
       <div id="day-by-day" className="border-t border-stone-300 pt-12 mb-12">
         <div className="flex items-center justify-between mb-2">
@@ -1559,7 +1567,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
               const anyCollapsed = days.some((_, i) => !expandedDays[i]);
               anyCollapsed ? expandAll() : collapseAll();
             }}
-            className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
+            className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors no-print"
             style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           >
             {days.some((_, i) => !expandedDays[i]) ? 'Expand all' : 'Collapse all'}
@@ -1620,7 +1628,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     </div>
                   </div>
                   <div
-                    className="mt-4 pt-3 border-t border-stone-200 flex items-center justify-center gap-2 text-xs tracking-[0.2em] uppercase select-none"
+                    className="mt-4 pt-3 border-t border-stone-200 flex items-center justify-center gap-2 text-xs tracking-[0.2em] uppercase select-none no-print"
                     style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
                   >
                     <span className="text-base leading-none">{isExpanded ? '−' : '+'}</span>
@@ -1673,7 +1681,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                     </div>
 
                     {/* Change controls */}
-                    <div className="mt-6">
+                    <div className="mt-6 no-print">
                       <div className="flex items-center gap-5">
                         <button
                           onClick={() => setEditingDay(editingDay === i ? null : i)}
@@ -1772,6 +1780,8 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           <RotateCcw size={14} /> Start a new plan
         </button>
       </div>
+
+      <div className="print-footer">Wished · Your personalised Walt Disney World plan · getwished.com</div>
     </div>
   );
 }
