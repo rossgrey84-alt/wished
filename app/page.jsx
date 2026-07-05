@@ -169,6 +169,16 @@ function EmailCapture({ answers, pinnedDays, days }) {
         });
       }
     } catch { /* analytics already captured it; never block the user */ }
+
+    // Send the user their branded "plan saved" email via our Resend route.
+    try {
+      await fetch('/api/save-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: clean, planUrl, style }),
+      });
+    } catch { /* email is best-effort; never block the confirmation */ }
+
     setStatus('done');
   };
 
