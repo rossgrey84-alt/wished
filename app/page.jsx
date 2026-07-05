@@ -495,7 +495,7 @@ function Intro({ onStart }) {
         Build my plan, free
       </button>
       <div className="mt-4 text-xs tracking-[0.1em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-        No sign-up to start &middot; Takes about four minutes
+        No sign-up to start &middot; Takes minutes
       </div>
     </>
   );
