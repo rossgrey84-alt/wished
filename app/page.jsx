@@ -513,33 +513,35 @@ function Intro({ onStart }) {
           A tailored day-by-day plan for your family, dates and pace. No spreadsheets, no guesswork.
         </p>
 
-        <div className="rounded-lg max-w-sm mb-3 overflow-hidden" style={{ border: '1px solid #e2dccd', background: 'rgba(255,255,255,0.6)', boxShadow: '0 12px 34px -14px rgba(28,25,23,0.3)' }}>
-          <div className="px-5 pt-3.5 pb-1 flex items-center justify-between">
-            <span className="text-[10px] tracking-[0.18em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Your Wished plan</span>
-            <span className="text-[9px] tracking-[0.16em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Sneak peek</span>
+        <div className="rounded-lg max-w-sm mb-3 overflow-hidden" style={{ border: '1px solid #e7ddc8', background: 'linear-gradient(180deg,#fefcf7 0%,#f8f3e8 100%)', boxShadow: '0 14px 36px -16px rgba(28,25,23,0.32)' }}>
+          <div className="px-5 pt-3.5 pb-2">
+            <span className="text-[10px] tracking-[0.22em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Sample Wished strategy</span>
           </div>
-          <div className="relative px-5 pb-4">
-            <div className="text-[10px] tracking-[0.2em] uppercase mb-1.5 mt-1.5" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Day 1</div>
+          <div className="px-5 pb-4">
+            <div className="text-[11px] tracking-[0.1em] uppercase mb-2 text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Day 1 · Arrival day</div>
             {[
-              ['Morning', 'Magic Kingdom', 'Best first-day park', '#b6a6dd'],
-              ['Midday', 'Rest & pool', 'Keeps everyone fresh', '#cbb98f'],
-              ['Evening', 'Fireworks', 'A perfect end to day one', '#d3a3ac'],
-            ].map(([t, p, r, dot]) => (
-              <div key={t} className="flex items-baseline gap-2 py-[3px]">
-                <span className="w-[52px] shrink-0 text-[8px] tracking-[0.12em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{t}</span>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0 self-center" style={{ background: dot }} />
+              ['Morning', 'Travel & arrive', 'Keep it light'],
+              ['Midday', 'Settle & pool', "Protect everyone's energy"],
+              ['Evening', 'EPCOT', 'An easy first park'],
+            ].map(([t, p, r]) => (
+              <div key={t} className="flex items-baseline gap-3 py-[3px]">
+                <span className="w-[54px] shrink-0 text-[8px] tracking-[0.12em] uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{t}</span>
                 <span className="text-[13px] text-stone-900" style={{ fontFamily: 'Georgia, serif' }}>{p}</span>
                 <span className="text-[11px] text-stone-500 italic ml-auto text-right" style={{ fontFamily: 'Georgia, serif' }}>{r}</span>
               </div>
             ))}
-            <p className="text-[11px] text-stone-500 italic mt-2 mb-1 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>Ease in gently — and still end the day on Disney magic.</p>
-            <div className="pt-1.5 text-[11px] text-stone-400" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>Day 2 · EPCOT, ideal after a late night…</div>
-            <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-12" style={{ background: 'linear-gradient(to bottom, rgba(252,251,247,0) 0%, rgba(252,251,247,0.92) 82%)' }} />
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid #ece3d0' }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <WishStar size={12} />
+                <span className="text-[10px] tracking-[0.16em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Why this works</span>
+              </div>
+              <p className="text-[12px] text-stone-700 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>You still get a Disney evening — but Magic Kingdom waits for your first full day, when everyone's rested.</p>
+            </div>
           </div>
         </div>
         <p className="text-xs md:text-[13px] text-stone-500 max-w-sm mb-5 flex items-start gap-2 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
           <span style={{ color: '#9a7b2e' }}>✦</span>
-          <span>Built around your children's ages, your hotel, arrival day and preferred pace.</span>
+          <span>Your real plan adapts to your hotel, your children's ages, arrival time and pace.</span>
         </p>
 
         {CTA}
