@@ -1225,6 +1225,89 @@ function SelectCard({ selected, onClick, title, sub }) {
   );
 }
 
+// A purpose-built, landscape, single-page artefact — the keepable "master trip board".
+// NOT the stacked at-a-glance cards: a compact 7-column grid of the whole trip, built
+// from the real engine (daySlots / tripShape / holidayStyle / generateStrategy).
+function PrintableOnePagePlan({ answers, days }) {
+  const style = holidayStyle(answers, days).name;
+  const chips = tripShape(answers, days);
+  const recs = generateStrategy(answers, days).slice(0, 3);
+  const start = answers.dates && answers.dates.start ? new Date(answers.dates.start) : null;
+  const end = answers.dates && answers.dates.end ? new Date(answers.dates.end) : null;
+  const fmt = (d) => d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const fmtDay = (d) => d ? d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const crowdColour = (c) => c == null ? null : (c <= 3 ? '#65a30d' : c <= 5 ? '#a16207' : c <= 7 ? '#c2410c' : '#9a4034');
+  const crowdWord = (c) => c == null ? null : (c <= 3 ? 'Quieter' : c <= 5 ? 'Moderate' : c <= 7 ? 'Busy' : 'Peak');
+  const parkInk = (p) => ({ 'Magic Kingdom': '#4b4b7a', 'EPCOT': '#3a5670', 'Hollywood Studios': '#7a4a57', 'Animal Kingdom': '#4a6342' }[p] || '#8a7a52');
+
+  return (
+    <div className="one-page-print" style={{ fontFamily: 'Georgia, serif', color: '#1c1917', padding: '2px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1c1917', paddingBottom: '8px', marginBottom: '10px' }}>
+        <div>
+          <div style={{ fontSize: '12px', letterSpacing: '4px', marginBottom: '2px' }}>WISHED <span style={{ color: '#9a7b2e' }}>&#10022;</span></div>
+          <div style={{ fontSize: '19px', lineHeight: 1.1 }}>Your One-Page Wished Plan</div>
+          <div style={{ fontSize: '11px', color: '#57534e', marginTop: '3px' }}>{fmt(start)} – {fmt(end)} &nbsp;·&nbsp; {style}</div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '52%', justifyContent: 'flex-end' }}>
+          {chips.slice(0, 6).map((c, i) => (
+            <span key={i} style={{ fontSize: '8px', fontFamily: 'Helvetica, Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '0.4px', border: '1px solid #d6cdb8', borderRadius: '3px', padding: '3px 6px', color: '#57534e', background: '#faf6ec' }}>
+              <span style={{ color: '#9a7b2e' }}>{c.label}:</span> {c.value}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '10px' }}>
+        {days.map((d, i) => {
+          const s = daySlots(d, answers, i, days.length);
+          const isPark = isParkName(d.park);
+          const cc = isPark ? crowdColour(d.crowd) : null;
+          return (
+            <div key={i} style={{ border: '1px solid #e2dccd', borderTop: `3px solid ${parkInk(d.park)}`, borderRadius: '3px', padding: '5px 6px', background: '#fff', minHeight: '92px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Day {i + 1}</span>
+                <span style={{ fontSize: '7px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif' }}>{fmtDay(d.date)}</span>
+              </div>
+              <div style={{ fontSize: '9.5px', color: parkInk(d.park), fontWeight: 'bold', margin: '2px 0 3px', lineHeight: 1.05 }}>{dayLabel(d.park, answers)}</div>
+              <div style={{ fontSize: '8px', lineHeight: 1.4, color: '#44403c', fontFamily: 'Helvetica, Arial, sans-serif', flex: 1 }}>
+                <div><span style={{ color: '#9a7b2e' }}>AM</span> {s.am.label}</div>
+                <div><span style={{ color: '#9a7b2e' }}>MID</span> {s.mid.label}</div>
+                <div><span style={{ color: '#9a7b2e' }}>EVE</span> {s.eve.label}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginTop: '3px', fontSize: '7px', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                {s.ll && <span style={{ color: '#9a7b2e', fontWeight: 'bold' }}>&#9889; LL</span>}
+                {cc && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: '#78716c' }}><span style={{ width: '6px', height: '6px', borderRadius: '9px', background: cc, display: 'inline-block' }} />{crowdWord(d.crowd)}</span>}
+                {d.flag && <span style={{ color: '#b45309' }}>&#9873;</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid #d6d3d1', paddingTop: '8px' }}>
+        <div style={{ flex: 2 }}>
+          <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#9a7b2e', fontFamily: 'Helvetica, Arial, sans-serif', marginBottom: '4px' }}>Wished recommends</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {recs.map((r, i) => (
+              <div key={i} style={{ fontSize: '9px', color: '#292524', lineHeight: 1.3 }}><span style={{ color: '#9a7b2e' }}>&#10022;</span> {r.decision}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{ flex: 1, fontSize: '7.5px', color: '#78716c', fontFamily: 'Helvetica, Arial, sans-serif', lineHeight: 1.6 }}>
+          <div style={{ letterSpacing: '1px', textTransform: 'uppercase', color: '#9a7b2e', marginBottom: '3px' }}>Legend</div>
+          AM morning · MID midday · EVE evening<br />
+          &#9889; Lightning Lane recommended<br />
+          &#9679; crowd level &nbsp; &#9873; watch-out / event
+        </div>
+      </div>
+
+      <div style={{ marginTop: '8px', fontSize: '8px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif', textAlign: 'center' }}>
+        Built around your family, hotel, dates, arrival day and pace &nbsp;·&nbsp; Full day-by-day detail in your Wished plan &nbsp;·&nbsp; getwished.com
+      </div>
+    </div>
+  );
+}
+
 function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
   const days = generateStubDays(answers, pinnedDays);
   const [expandedDays, setExpandedDays] = useState({ 0: true });
@@ -1272,28 +1355,21 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
     setTimeout(() => setCopied(false), 2500);
     track('plan_link_copied');
   };
-  const printPlan = () => {
-    track('plan_printed');
-    expandAll();                                  // open every day so the whole plan prints
-    setTimeout(() => window.print(), 400);
-  };
+  const printPlan = () => { track('plan_printed'); if (typeof window !== 'undefined') window.print(); };
 
   return (
     <div>
       <style>{`
-        .print-footer { display: none; }
+        .one-page-print { display: none; }
         @media print {
-          @page { margin: 14mm; }
+          @page { size: A4 landscape; margin: 8mm; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          #wished-root { background: #ffffff !important; }
-          .no-print, .no-print * { display: none !important; }
-          .plan-summary { break-after: page; page-break-after: always; }
-          .plan-day { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; }
-          .print-keep { break-inside: avoid; page-break-inside: avoid; }
-          .print-head { break-after: avoid; page-break-after: avoid; }
-          .print-footer { display: block !important; margin-top: 28px; padding-top: 14px; border-top: 1px solid #d6d3d1; text-align: center; font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.04em; color: #78716c; }
+          .live-plan { display: none !important; }
+          .one-page-print { display: block !important; }
         }
       `}</style>
+      <PrintableOnePagePlan answers={answers} days={days} />
+      <div className="live-plan">
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-300 no-print">
         <WishLockup height={18} />
         <div className="flex items-center gap-4 flex-wrap">
@@ -1309,7 +1385,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
             className="flex items-center gap-2 text-xs tracking-[0.18em] uppercase text-stone-600 hover:text-stone-900 transition-colors"
             style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           >
-            <Printer size={13} /> Print / Save PDF
+            <Printer size={13} /> Print one-page plan
           </button>
           <button
             onClick={onReset}
@@ -1770,7 +1846,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           className="flex items-center gap-2 text-sm tracking-[0.18em] uppercase px-6 py-3 transition-colors"
           style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e', border: '1px solid #d9c89a', background: '#f9f6ef' }}
         >
-          <Printer size={14} /> Print / Save PDF
+          <Printer size={14} /> Print one-page plan
         </button>
         <button
           onClick={onReset}
@@ -1780,8 +1856,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
           <RotateCcw size={14} /> Start a new plan
         </button>
       </div>
-
-      <div className="print-footer">Wished · Your personalised Walt Disney World plan · getwished.com</div>
+      </div>{/* live-plan */}
     </div>
   );
 }
