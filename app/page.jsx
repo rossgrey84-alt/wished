@@ -1310,7 +1310,7 @@ function PrintableOnePagePlan({ answers, days }) {
 
 function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEditingDay }) {
   const days = generateStubDays(answers, pinnedDays);
-  const [expandedDays, setExpandedDays] = useState({ 0: true });
+  const [openDay, setOpenDay] = useState(0);
   const [showWhy, setShowWhy] = useState(false);
   const fullPlanFiredRef = useRef(false);
   const markFullPlanViewed = () => {
@@ -1319,19 +1319,12 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
     track('full_plan_viewed');
   };
 
-  const toggleExpand = (dayIdx) => {
-    const opening = !expandedDays[dayIdx];
+  const toggleDay = (dayIdx) => {
+    const opening = openDay !== dayIdx;
     markFullPlanViewed();
     if (opening) track('view_full_day_clicked', { day: dayIdx + 1, park: days[dayIdx]?.park });
-    setExpandedDays(prev => ({ ...prev, [dayIdx]: !prev[dayIdx] }));
+    setOpenDay(opening ? dayIdx : null);
   };
-  const expandAll = () => {
-    markFullPlanViewed();
-    const all = {};
-    days.forEach((_, i) => { all[i] = true; });
-    setExpandedDays(all);
-  };
-  const collapseAll = () => setExpandedDays({});
 
   const pinDay = (dayIdx, value) => {
     setPinnedDays({ ...pinnedDays, [dayIdx]: value });
@@ -1535,193 +1528,95 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         );
       })()}
 
-      {/* At a glance — the whole trip as a morning / midday / evening grid. Doubles as page one
-          of the printed PDF, and as the shareable summary. */}
-      <div id="at-a-glance" className="plan-summary mb-12">
+      {/* Your Wished plan — one merged, tight accordion. Each row is the whole day at a glance
+          (park, AM/MID/EVE, crowd, markers); tap to open full guidance, one day open at a time.
+          The scannable rows replace the old separate at-a-glance grid. */}
+      <div id="at-a-glance" />
+      <div id="day-by-day" className="plan-summary mb-12">
         <div className="text-xs tracking-[0.4em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-          Your one-page Wished plan
+          Your Wished plan
         </div>
         <p className="text-sm text-stone-500 mb-6 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
-          Your whole trip on one page. Tap any day to open its full plan in the day-by-day section below.
+          Your whole trip, day by day. Tap any day for its full morning, midday and evening plan.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+        <div className="space-y-2">
           {days.map((d, i) => {
+            const isPinned = pinnedDays[i] !== undefined;
+            const warning = isPinned ? checkPinWarning(i, pinnedDays[i], d, answers) : null;
+            const isOpen = openDay === i;
+            const priority = generateDayPriority(d, i, days.length, answers);
+            const dailyTip = generateDayTip(d, i, answers);
             const s = daySlots(d, answers, i, days.length);
             const rows = [['AM', s.am], ['MID', s.mid], ['EVE', s.eve]];
             const crowdColour = d.crowd == null ? null : (d.crowd <= 3 ? '#65a30d' : d.crowd <= 5 ? '#a16207' : d.crowd <= 7 ? '#c2410c' : '#9a4034');
             return (
-              <button
-                key={i}
-                onClick={() => {
-                  markFullPlanViewed();
-                  track('view_full_day_clicked', { day: i + 1, park: d.park });
-                  setExpandedDays(prev => ({ ...prev, [i]: true }));
-                  if (typeof document !== 'undefined') {
-                    const el = document.getElementById(`day-${i}`);
-                    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-                  }
-                }}
-                className="text-left border border-stone-200 bg-stone-50/40 p-3 hover:bg-stone-100/60 hover:border-stone-300 transition-colors flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-3 gap-2">
-                  <span className="text-base text-stone-900 shrink-0" style={{ fontFamily: 'Georgia, serif' }}>Day {i + 1}</span>
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[10px] tracking-wide uppercase text-stone-400 truncate" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                      {d.date ? d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
-                    </span>
-                    {crowdColour && <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: crowdColour }} />}
-                    <ChevronRight size={14} className="text-stone-300 shrink-0" />
-                  </span>
-                </div>
-                {rows.map(([labelText, slot]) => {
-                  const tone = slotTone(slot.kind);
-                  return (
-                    <div key={labelText} className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[9px] tracking-[0.15em] uppercase text-stone-400 w-7 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{labelText}</span>
-                      <span className="text-xs px-2 py-1 flex-1" style={{ background: tone.bg, color: tone.fg, fontFamily: 'Georgia, serif' }}>{slot.label}</span>
-                    </div>
-                  );
-                })}
-                {(s.ll || s.note) && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5 items-center">
-                    {s.ll && (
-                      <span className="inline-flex items-center gap-1 text-[9px] tracking-wide uppercase px-1.5 py-0.5" style={{ background: '#f3e7cf', color: '#9a7b2e', fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                        <WishStar size={9} /> LL
-                      </span>
-                    )}
-                    {s.note && <span className="text-[10px] italic text-stone-500" style={{ fontFamily: 'Georgia, serif' }}>{s.note}</span>}
-                  </div>
-                )}
-                <span className="mt-3 text-[10px] tracking-[0.14em] uppercase self-end inline-flex items-center gap-1 no-print" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>View full day →</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] tracking-wide uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-          <span>AM morning · MID midday · EVE evening</span>
-          <span className="inline-flex items-center gap-1"><WishStar size={9} color="#9a7b2e" /> LL = Lightning Lane recommended</span>
-        </div>
-        {answers.lightning !== 'none' && (
-          <p className="mt-4 text-sm text-stone-500 leading-relaxed max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
-            New to Lightning Lane? <span className="text-stone-600">Multi Pass</span> books ride-skips through the day; <span className="text-stone-600">Single Pass</span> is a paid extra for the biggest headliners. <a href="/lightning-lane" className="underline decoration-stone-300 underline-offset-2 hover:text-stone-900" style={{ color: '#9a7b2e' }}>Read the Lightning Lane guide →</a>
-          </p>
-        )}
-      </div>
-
-      <div className="text-center mb-12">
-        <button
-          onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('day-by-day'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
-          className="text-sm tracking-[0.14em] uppercase hover:opacity-70 transition-opacity no-print"
-          style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
-        >
-          Jump to your detailed day-by-day plan ↓
-        </button>
-      </div>
-
-      {(() => {
-        const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
-        if (!(epcotCount >= 3 && answers.property === 'on' && isResortSkyliner(answers.resort))) return null;
-        return (
-          <div className="mb-12 border-l-2 pl-4 max-w-2xl" style={{ borderColor: '#d8d1c2' }}>
-            <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Why EPCOT appears often</div>
-            <p className="text-stone-700 leading-relaxed">Because you're staying at {answers.resort}, EPCOT is a low-friction evening park via the Skyliner. We're using it for relaxed evenings rather than loading every day with a full park push — it's a feature of where you're staying, not the planner overusing one park.</p>
-          </div>
-        );
-      })()}
-
-      <div className="no-print">
-        <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
-      </div>
-
-      <div id="day-by-day" className="border-t border-stone-300 pt-12 mb-12">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-xs tracking-[0.3em] uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
-            Day by day
-          </div>
-          <button
-            onClick={() => {
-              const anyCollapsed = days.some((_, i) => !expandedDays[i]);
-              anyCollapsed ? expandAll() : collapseAll();
-            }}
-            className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors no-print"
-            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-          >
-            {days.some((_, i) => !expandedDays[i]) ? 'Expand all' : 'Collapse all'}
-          </button>
-        </div>
-        <p className="text-sm text-stone-500 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
-          Open each day for morning, midday and evening guidance.
-        </p>
-        <div className="space-y-4">
-          {days.map((d, i) => {
-            const isPinned = pinnedDays[i] !== undefined;
-            const warning = isPinned ? checkPinWarning(i, pinnedDays[i], d, answers) : null;
-            const isExpanded = !!expandedDays[i];
-            const priority = generateDayPriority(d, i, days.length, answers);
-            const dailyTip = generateDayTip(d, i, answers);
-            return (
-              <div key={i} id={`day-${i}`} className="plan-day border border-stone-200 bg-stone-50/40">
-                {/* Always-visible summary row — tap to expand */}
+              <div key={i} id={`day-${i}`} className={`plan-day border ${isOpen ? 'border-stone-300 bg-stone-50/60' : 'border-stone-200 bg-stone-50/40'} transition-colors`}>
+                {/* Always-visible summary row — the whole day at a glance */}
                 <button
-                  onClick={() => toggleExpand(i)}
-                  className="w-full text-left p-5 md:p-6 hover:bg-stone-100/50 transition-colors"
+                  onClick={() => toggleDay(i)}
+                  className="w-full text-left p-4 md:p-5 hover:bg-stone-100/50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 flex-wrap mb-1.5">
-                        <span className="text-xs tracking-[0.2em] uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    <div className="flex-1 min-w-0">
+                      {/* line 1: day, date, crowd, markers */}
+                      <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                        <span className="text-xs tracking-[0.2em] uppercase text-stone-500 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                           Day {i + 1}{d.date ? ` · ${d.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : ''}
                         </span>
-                        {d.crowd !== null && d.crowd !== undefined && <CrowdDot level={d.crowd} />}
+                        {crowdColour && <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: crowdColour }} />}
                         {d.llmp === true && (
-                          <span className="text-xs px-2 py-0.5 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#f0e9d6', color: '#9a7b2e', border: '1px solid #d9c89a' }}>
-                            ⚡ Lightning Lane Multi Pass
-                          </span>
-                        )}
-                        {d.llmp === false && (
-                          <span className="text-xs px-2 py-0.5 tracking-wider uppercase text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif', border: '1px solid #d6d3d1' }}>
-                            Standby OK
+                          <span className="text-[10px] px-1.5 py-0.5 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif', background: '#f0e9d6', color: '#9a7b2e', border: '1px solid #d9c89a' }}>
+                            ⚡ Lightning Lane
                           </span>
                         )}
                         {isPinned && (
-                          <span className="text-xs px-2 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-stone-200 text-stone-700 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                             Changed
                           </span>
                         )}
                         {d.flag && (
-                          <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                            ⚑ Event Note
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 tracking-wider uppercase" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            ⚑ Event
                           </span>
                         )}
                       </div>
-                      <div className="text-2xl text-stone-900 italic leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+                      {/* line 2: park label */}
+                      <div className="text-xl md:text-2xl text-stone-900 italic leading-tight mb-2.5" style={{ fontFamily: 'Georgia, serif' }}>
                         {dayLabel(d.park, answers)}
                       </div>
-                      <div className="text-stone-600 leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
-                        <span className="text-xs tracking-[0.15em] uppercase not-italic mr-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Today</span>
-                        {priority}
+                      {/* line 3: AM / MID / EVE chips — the scannable substance */}
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5">
+                        {rows.map(([labelText, slot]) => {
+                          const tone = slotTone(slot.kind);
+                          return (
+                            <span key={labelText} className="inline-flex items-center gap-1.5 min-w-0">
+                              <span className="text-[9px] tracking-[0.15em] uppercase text-stone-400 shrink-0" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{labelText}</span>
+                              <span className="text-xs px-2 py-0.5" style={{ background: tone.bg, color: tone.fg, fontFamily: 'Georgia, serif' }}>{slot.label}</span>
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
-                  <div
-                    className="mt-4 pt-3 border-t border-stone-200 flex items-center justify-center gap-2 text-xs tracking-[0.2em] uppercase select-none no-print"
-                    style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}
-                  >
-                    <span className="text-base leading-none">{isExpanded ? '−' : '+'}</span>
-                    {isExpanded ? 'Close day' : 'View full day'}
+                    {/* open / close affordance */}
+                    <span className="shrink-0 text-lg leading-none mt-0.5 select-none no-print" style={{ color: '#9a7b2e' }}>{isOpen ? '−' : '+'}</span>
                   </div>
                 </button>
 
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div className="px-5 md:px-6 pb-6">
+                {/* Expanded detail — one day open at a time */}
+                {isOpen && (
+                  <div className="px-4 md:px-5 pb-6">
+                    <div className="text-stone-600 leading-snug mb-6 border-t border-stone-200 pt-5" style={{ fontFamily: 'Georgia, serif' }}>
+                      <span className="text-xs tracking-[0.15em] uppercase not-italic mr-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>Today</span>
+                      {priority}
+                    </div>
                     {warning && (
                       <div className="mb-5 p-4 bg-amber-50 border-l-2 border-amber-400 text-sm text-amber-900 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
                         <div className="not-italic mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Watch out</div>
                         {warning}
                       </div>
                     )}
-                    <p className="text-stone-800 leading-relaxed mb-7 italic text-lg border-t border-stone-200 pt-6" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
+                    <p className="text-stone-800 leading-relaxed mb-7 italic text-lg" style={{ fontFamily: 'Georgia, serif' }}>{typeof d.rationale === 'object' ? d.rationale.headline : d.rationale}</p>
                     {typeof d.rationale === 'object' && (
                       <div className="space-y-6">
                         {d.rationale.morning && (
@@ -1767,11 +1662,11 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                           {editingDay === i ? '× Close' : 'Change this day →'}
                         </button>
                         <button
-                          onClick={() => { if (typeof document !== 'undefined') { const el = document.getElementById('at-a-glance'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
+                          onClick={() => setOpenDay(null)}
                           className="text-xs tracking-wider uppercase text-stone-400 hover:text-stone-700 transition-colors"
                           style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                         >
-                          ↑ Back to overview
+                          − Close day
                         </button>
                       </div>
                       {editingDay === i && (
@@ -1814,6 +1709,31 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
             );
           })}
         </div>
+
+        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] tracking-wide uppercase text-stone-400" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          <span>AM morning · MID midday · EVE evening</span>
+          <span className="inline-flex items-center gap-1"><WishStar size={9} color="#9a7b2e" /> Lightning Lane recommended</span>
+        </div>
+        {answers.lightning !== 'none' && (
+          <p className="mt-4 text-sm text-stone-500 leading-relaxed max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
+            New to Lightning Lane? <span className="text-stone-600">Multi Pass</span> books ride-skips through the day; <span className="text-stone-600">Single Pass</span> is a paid extra for the biggest headliners. <a href="/lightning-lane" className="underline decoration-stone-300 underline-offset-2 hover:text-stone-900" style={{ color: '#9a7b2e' }}>Read the Lightning Lane guide →</a>
+          </p>
+        )}
+      </div>
+
+      {(() => {
+        const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
+        if (!(epcotCount >= 3 && answers.property === 'on' && isResortSkyliner(answers.resort))) return null;
+        return (
+          <div className="mb-12 border-l-2 pl-4 max-w-2xl" style={{ borderColor: '#d8d1c2' }}>
+            <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Why EPCOT appears often</div>
+            <p className="text-stone-700 leading-relaxed">Because you're staying at {answers.resort}, EPCOT is a low-friction evening park via the Skyliner. We're using it for relaxed evenings rather than loading every day with a full park push — it's a feature of where you're staying, not the planner overusing one park.</p>
+          </div>
+        );
+      })()}
+
+      <div className="no-print">
+        <EmailCapture answers={answers} pinnedDays={pinnedDays} days={days} />
       </div>
 
       <div id="non-obvious-stuff" className="border-t border-stone-300 pt-12 mb-12">
