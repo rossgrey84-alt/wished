@@ -1659,7 +1659,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                           className="text-xs tracking-wider uppercase text-stone-500 hover:text-stone-900 transition-colors"
                           style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
                         >
-                          {editingDay === i ? '× Close' : 'Change this day →'}
+                          {editingDay === i ? '× Close' : 'Switch this day →'}
                         </button>
                         <button
                           onClick={() => setOpenDay(null)}
@@ -1672,7 +1672,7 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                       {editingDay === i && (
                         <div className="mt-4 p-5 bg-white border border-stone-300">
                           <div className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                            Change Day {i + 1} to:
+                            Switch Day {i + 1} to:
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
                             {['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom', 'Rest day', 'Water park'].map(opt => (
@@ -3189,7 +3189,9 @@ function generateDayPriority(d, dayIndex, totalDays, a) {
   const isDeparture = dayIndex === totalDays - 1 && totalDays > 1;
   const hasYoungKids = a.party.kids > 0 || a.party.under3 > 0;
   const hasTeens = a.party.teens > 0;
-  const ropeDrop = resolveRhythm(a) === 'rope';
+  const rhythmNow = resolveRhythm(a);
+  const ropeDrop = rhythmNow === 'rope';
+  const lateStart = rhythmNow === 'late';
 
   if (park === 'Travel day') return "Settle in. The trip starts properly tomorrow — rest tonight.";
   if (park === 'Rest day') return "Protect energy. This day is what stops the trip falling apart later — don't be tempted to sneak in a park.";
@@ -3197,6 +3199,15 @@ function generateDayPriority(d, dayIndex, totalDays, a) {
 
   if (isArrival) return "Ease in. Don't try to win the trip on day one — get your bearings and save the energy.";
   if (isDeparture) return "Loose ends. Hit the one or two things you missed, then go out on a high.";
+
+  // Late-start days: never tell someone who's chosen a lie-in to rope drop
+  if (lateStart) {
+    if (park === 'EPCOT') return "Ease in late. Arrive around 11, take the front-of-park rides on Multi Pass, then let World Showcase carry the evening.";
+    if (park === 'Hollywood Studios') return "Multi Pass is your morning. Skip the rope-drop scrum — book the headliners and ride them through the afternoon.";
+    if (park === 'Animal Kingdom') return "Come in mid-morning and stay late. Pandora after dark is the reason to do this park on a slow-start day.";
+    if (park === 'Magic Kingdom') return "Arrive late, stay for fireworks. Let Multi Pass clear the headliners while the early crowd burns itself out.";
+    return "Late start today. Skip rope drop, lean on Multi Pass for the big rides, and stay till close when the queues fall away.";
+  }
 
   // Energy-management priorities mid-trip
   if (hasTeens && dayIndex >= 4 && dayIndex <= 6 && ropeDrop) {
@@ -3224,7 +3235,21 @@ function generateDayTip(d, dayIndex, a) {
   const park = d.park;
   if (park === 'Travel day') return "Set up My Disney Experience tonight and link your tickets — don't do it in the queue tomorrow.";
   if (park === 'Rest day') return "Disney Springs is free to enter and a good low-effort outing if the resort feels too quiet.";
-  if (park === 'Water park') return "Get there at opening — slides back up faster than rides, so the early advantage is bigger than you'd think.";
+
+  const lateStart = resolveRhythm(a) === 'late';
+  if (park === 'Water park') return lateStart
+    ? "Roll in mid-morning and stay through the afternoon — the opening rush thins out and you'll walk onto the slides everyone queued for at open."
+    : "Get there at opening — slides back up faster than rides, so the early advantage is bigger than you'd think.";
+
+  if (lateStart) {
+    const lateTips = {
+      'Magic Kingdom': "Save Seven Dwarfs and Peter Pan's Flight for Multi Pass — arriving late the standby lines are brutal, but they thin right out in the last hour before close.",
+      'EPCOT': "Book Multi Pass for the front-of-park headliners before you arrive, then walk World Showcase counter-clockwise as it cools off in the evening.",
+      'Hollywood Studios': "Slinky Dog Dash is the toughest Multi Pass here — grab it the second your booking window opens, since you're skipping the rope-drop shot at it.",
+      'Animal Kingdom': "Flight of Passage never really has a short standby line — lock in Multi Pass or buy the Single Pass, then re-ride Pandora after dark.",
+    };
+    return lateTips[park] || "Refresh the app for Lightning Lane drops through the afternoon — cancellations appear constantly, and they're your best friend on a late day.";
+  }
 
   const tips = {
     'Magic Kingdom': "Peter Pan's Flight builds the longest queue for the least ride — do it at rope drop or via Multi Pass, never standby midday.",
@@ -3237,19 +3262,29 @@ function generateDayTip(d, dayIndex, a) {
 
 function generateTips(a) {
   const tips = [];
+  const lateStart = resolveRhythm(a) === 'late';
 
   // The genuine insider tier — specific, researched, the stuff that changes a trip.
   tips.push({ title: 'Watch the Magic Kingdom fireworks from Gaston\'s Tavern', body: "Everyone packs onto Main Street an hour early. Head behind the castle to the outdoor seating by Gaston's Tavern in New Fantasyland instead — you get a calm, unique view of the show without camping out for a spot, and you're near Seven Dwarfs for a near-walk-on right after." });
-  if (a.property === 'off') {
-    tips.push({ title: 'Off-site? Rope drop Frontierland, not Fantasyland', body: "Early Entry resort guests flood Fantasyland and Tomorrowland first. If you don't have Early Entry, head the opposite way to Frontierland or Adventureland at opening — Big Thunder and Tiana's Bayou Adventure will be near walk-ons while everyone else queues for Seven Dwarfs." });
+
+  if (lateStart) {
+    tips.push({ title: 'The last two hours are your second rope drop', body: "You've chosen late starts — and the back half of the day rewards it. From about 5pm the morning crowd fades and families with young kids head out, so headliner waits often fall as fast as they do at opening. You get the rope-drop advantage without the alarm clock." });
+    tips.push({ title: 'Multi Pass is your morning', body: "Skipping rope drop means giving up the free head start, so make Lightning Lane do that job instead. Book Multi Pass the instant your window opens (7am for the first slot), stack the biggest headliners into your late-morning arrival, then keep modifying upward as better times appear." });
+    tips.push({ title: 'Now lunch works for you, not against you', body: "The usual rule is never eat between 12 and 2 — but that's for rope-droppers protecting prime morning ride hours. On a late-start day the middle of the day is exactly when to take a proper sit-down: book 12.30-1.30, when you'd only be fighting peak crowds on the rides anyway." });
+    tips.push({ title: 'Stay for the night show, then ride', body: "Fireworks and evening spectaculars pull huge crowds off the rides — the 20-30 minutes during and right after are some of the shortest standby waits all day. Don't leave when the show ends; that's your window, and it's the natural payoff of staying till close." });
   } else {
-    tips.push({ title: 'Use your Early Theme Park Entry every morning', body: "Staying on-property gets you into the parks 30 minutes before day guests — that half hour clears more headliners than any Lightning Lane. Be at the gate for it on your big days; skipping it wastes the single biggest perk of staying on-site." });
+    if (a.property === 'off') {
+      tips.push({ title: 'Off-site? Rope drop Frontierland, not Fantasyland', body: "Early Entry resort guests flood Fantasyland and Tomorrowland first. If you don't have Early Entry, head the opposite way to Frontierland or Adventureland at opening — Big Thunder and Tiana's Bayou Adventure will be near walk-ons while everyone else queues for Seven Dwarfs." });
+    } else {
+      tips.push({ title: 'Use your Early Theme Park Entry every morning', body: "Staying on-property gets you into the parks 30 minutes before day guests — that half hour clears more headliners than any Lightning Lane. Be at the gate for it on your big days; skipping it wastes the single biggest perk of staying on-site." });
+    }
+    tips.push({ title: 'Bundle your rope drop rides by location', body: "The first 60-90 minutes are worth more than any other part of the day — headliner waits run 50-70% shorter than midday. Don't crisscross the park: do Seven Dwarfs then Winnie the Pooh (both Fantasyland), or Space Mountain then Buzz (both Tomorrowland). You can clear 4-6 major rides before most people finish their first." });
+    tips.push({ title: 'Use the Tangled bathrooms shortcut', body: "There's a hidden walkway by the Tangled-themed restrooms between Fantasyland and Liberty Square that locals use to cut across the park fast at rope drop. It's the quickest pivot if your first-choice ride is down when you arrive — and something always is." });
+    tips.push({ title: 'Arrive 45-60 minutes before posted opening', body: "If you show up at the official opening time, you're already late — the rope-drop advantage is gone. Magic Kingdom is worst for this because you park at the TTC and still have a monorail or ferry to go. Build in the extra hop." });
+    tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and the restaurants are quieter anyway." });
   }
-  tips.push({ title: 'Bundle your rope drop rides by location', body: "The first 60-90 minutes are worth more than any other part of the day — headliner waits run 50-70% shorter than midday. Don't crisscross the park: do Seven Dwarfs then Winnie the Pooh (both Fantasyland), or Space Mountain then Buzz (both Tomorrowland). You can clear 4-6 major rides before most people finish their first." });
-  tips.push({ title: 'Use the Tangled bathrooms shortcut', body: "There's a hidden walkway by the Tangled-themed restrooms between Fantasyland and Liberty Square that locals use to cut across the park fast at rope drop. It's the quickest pivot if your first-choice ride is down when you arrive — and something always is." });
+
   tips.push({ title: 'Keep modifying your Lightning Lane to a better ride', body: "Once you've booked a Multi Pass slot you can keep changing it. Book the easiest available ride just to start the clock, then modify it upward as better times appear. Refresh obsessively — that's how people snag Seven Dwarfs at 2pm." });
-  tips.push({ title: 'Arrive 45-60 minutes before posted opening', body: "If you show up at the official opening time, you're already late — the rope-drop advantage is gone. Magic Kingdom is worst for this because you park at the TTC and still have a monorail or ferry to go. Build in the extra hop." });
-  tips.push({ title: "Never book a sit-down lunch between 12 and 2", body: "A midday table eats the exact 90 minutes when rope-drop momentum and Lightning Lane matter most. Book meals for 11am or after 4pm — prime ride hours stay free and the restaurants are quieter anyway." });
   tips.push({ title: 'Your on-ride photos are already in the app', body: "On-ride and character photos sync to My Disney Experience automatically. They're only free to download if you've added Memory Maker (or it's included in your package) — otherwise you can view them in the app but pay to download. Always check there before buying prints at a kiosk." });
   tips.push({ title: 'Rain is your friend, not your enemy', body: "Summer storms are daily and brief — they pass in 30 minutes and the crowds flee. A £1 poncho from home turns a downpour into the quietest, fastest hour of your day." });
 
