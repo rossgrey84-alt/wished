@@ -1166,42 +1166,42 @@ function PrintableOnePagePlan({ answers, days }) {
   const parkInk = (p) => ({ 'Magic Kingdom': '#4b4b7a', 'EPCOT': '#3a5670', 'Hollywood Studios': '#7a4a57', 'Animal Kingdom': '#4a6342' }[p] || '#8a7a52');
 
   return (
-    <div className="one-page-print" style={{ fontFamily: 'Georgia, serif', color: '#1c1917', padding: '2px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1c1917', paddingBottom: '8px', marginBottom: '10px' }}>
+    <div className="one-page-print" style={{ fontFamily: 'Georgia, serif', color: '#1c1917', padding: '0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1c1917', paddingBottom: '9px', marginBottom: '12px' }}>
         <div>
-          <div style={{ fontSize: '12px', letterSpacing: '4px', marginBottom: '2px' }}>WISHED <span style={{ color: '#9a7b2e' }}>&#10022;</span></div>
-          <div style={{ fontSize: '19px', lineHeight: 1.1 }}>Your One-Page Wished Plan</div>
-          <div style={{ fontSize: '11px', color: '#57534e', marginTop: '3px' }}>{fmt(start)} – {fmt(end)} &nbsp;·&nbsp; {style}</div>
+          <div style={{ fontSize: '14px', letterSpacing: '5px', marginBottom: '3px' }}>WISHED <span style={{ color: '#9a7b2e' }}>&#10022;</span></div>
+          <div style={{ fontSize: '24px', lineHeight: 1.05 }}>Your One-Page Wished Plan</div>
+          <div style={{ fontSize: '12.5px', color: '#57534e', marginTop: '4px' }}>{fmt(start)} – {fmt(end)} &nbsp;·&nbsp; {style}</div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '52%', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxWidth: '50%', justifyContent: 'flex-end' }}>
           {chips.slice(0, 6).map((c, i) => (
-            <span key={i} style={{ fontSize: '8px', fontFamily: 'Helvetica, Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '0.4px', border: '1px solid #d6cdb8', borderRadius: '3px', padding: '3px 6px', color: '#57534e', background: '#faf6ec' }}>
+            <span key={i} style={{ fontSize: '9px', fontFamily: 'Helvetica, Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '0.4px', border: '1px solid #d6cdb8', borderRadius: '3px', padding: '4px 8px', color: '#57534e', background: '#faf6ec' }}>
               <span style={{ color: '#9a7b2e' }}>{c.label}:</span> {c.value}
             </span>
           ))}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '7px', marginBottom: '13px' }}>
         {days.map((d, i) => {
           const s = daySlots(d, answers, i, days.length);
           const isPark = isParkName(d.park);
           const cc = isPark ? crowdColour(d.crowd) : null;
           return (
-            <div key={i} style={{ border: '1px solid #e2dccd', borderTop: `3px solid ${parkInk(d.park)}`, borderRadius: '3px', padding: '5px 6px', background: '#fff', minHeight: '92px', display: 'flex', flexDirection: 'column' }}>
+            <div key={i} style={{ border: '1px solid #e2dccd', borderTop: `4px solid ${parkInk(d.park)}`, borderRadius: '3px', padding: '9px 10px', background: '#fff', minHeight: '165px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Day {i + 1}</span>
-                <span style={{ fontSize: '7px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif' }}>{fmtDay(d.date)}</span>
+                <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Day {i + 1}</span>
+                <span style={{ fontSize: '8.5px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif' }}>{fmtDay(d.date)}</span>
               </div>
-              <div style={{ fontSize: '9.5px', color: parkInk(d.park), fontWeight: 'bold', margin: '2px 0 3px', lineHeight: 1.05 }}>{dayLabel(d.park, answers)}</div>
-              <div style={{ fontSize: '8px', lineHeight: 1.4, color: '#44403c', fontFamily: 'Helvetica, Arial, sans-serif', flex: 1 }}>
-                <div><span style={{ color: '#9a7b2e' }}>AM</span> {s.am.label}</div>
-                <div><span style={{ color: '#9a7b2e' }}>MID</span> {s.mid.label}</div>
-                <div><span style={{ color: '#9a7b2e' }}>EVE</span> {s.eve.label}</div>
+              <div style={{ fontSize: '13px', color: parkInk(d.park), fontWeight: 'bold', margin: '5px 0 6px', lineHeight: 1.1 }}>{dayLabel(d.park, answers)}</div>
+              <div style={{ fontSize: '10.5px', lineHeight: 1.55, color: '#44403c', fontFamily: 'Helvetica, Arial, sans-serif', flex: 1 }}>
+                <div style={{ marginBottom: '2px' }}><span style={{ color: '#9a7b2e', fontWeight: 'bold' }}>AM</span> {s.am.label}</div>
+                <div style={{ marginBottom: '2px' }}><span style={{ color: '#9a7b2e', fontWeight: 'bold' }}>MID</span> {s.mid.label}</div>
+                <div><span style={{ color: '#9a7b2e', fontWeight: 'bold' }}>EVE</span> {s.eve.label}</div>
               </div>
-              <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginTop: '3px', fontSize: '7px', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              <div style={{ display: 'flex', gap: '7px', alignItems: 'center', marginTop: '6px', fontSize: '9px', fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {s.ll && <span style={{ color: '#9a7b2e', fontWeight: 'bold' }}>&#9889; LL</span>}
-                {cc && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: '#78716c' }}><span style={{ width: '6px', height: '6px', borderRadius: '9px', background: cc, display: 'inline-block' }} />{crowdWord(d.crowd)}</span>}
+                {cc && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#78716c' }}><span style={{ width: '7px', height: '7px', borderRadius: '9px', background: cc, display: 'inline-block' }} />{crowdWord(d.crowd)}</span>}
                 {d.flag && <span style={{ color: '#b45309' }}>&#9873;</span>}
               </div>
             </div>
@@ -1209,16 +1209,16 @@ function PrintableOnePagePlan({ answers, days }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid #d6d3d1', paddingTop: '8px' }}>
+      <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #d6d3d1', paddingTop: '10px' }}>
         <div style={{ flex: 2 }}>
-          <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#9a7b2e', fontFamily: 'Helvetica, Arial, sans-serif', marginBottom: '4px' }}>Wished recommends</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ fontSize: '10.5px', letterSpacing: '2px', textTransform: 'uppercase', color: '#9a7b2e', fontFamily: 'Helvetica, Arial, sans-serif', marginBottom: '5px' }}>Wished recommends</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             {recs.map((r, i) => (
-              <div key={i} style={{ fontSize: '9px', color: '#292524', lineHeight: 1.3 }}><span style={{ color: '#9a7b2e' }}>&#10022;</span> {r.decision}</div>
+              <div key={i} style={{ fontSize: '11px', color: '#292524', lineHeight: 1.35 }}><span style={{ color: '#9a7b2e' }}>&#10022;</span> {r.decision}</div>
             ))}
           </div>
         </div>
-        <div style={{ flex: 1, fontSize: '7.5px', color: '#78716c', fontFamily: 'Helvetica, Arial, sans-serif', lineHeight: 1.6 }}>
+        <div style={{ flex: 1, fontSize: '8.5px', color: '#78716c', fontFamily: 'Helvetica, Arial, sans-serif', lineHeight: 1.7 }}>
           <div style={{ letterSpacing: '1px', textTransform: 'uppercase', color: '#9a7b2e', marginBottom: '3px' }}>Legend</div>
           AM morning · MID midday · EVE evening<br />
           &#9889; Lightning Lane recommended<br />
@@ -1226,7 +1226,7 @@ function PrintableOnePagePlan({ answers, days }) {
         </div>
       </div>
 
-      <div style={{ marginTop: '8px', fontSize: '8px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif', textAlign: 'center' }}>
+      <div style={{ marginTop: '10px', fontSize: '8.5px', color: '#a8a29e', fontFamily: 'Helvetica, Arial, sans-serif', textAlign: 'center' }}>
         Built around your family, hotel, dates, arrival day and pace &nbsp;·&nbsp; Full day-by-day detail in your Wished plan &nbsp;·&nbsp; getwished.com
       </div>
     </div>
@@ -1280,10 +1280,15 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       <style>{`
         .one-page-print { display: none; }
         @media print {
-          @page { size: A4 landscape; margin: 8mm; }
+          @page { size: A4 landscape; margin: 6mm; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { background: #fff !important; }
+          .no-print { display: none !important; }
           .live-plan { display: none !important; }
-          .one-page-print { display: block !important; }
+          /* Break the app's max-width, centring and top padding so the artefact fills the page */
+          #wished-root { background: #fff !important; min-height: 0 !important; }
+          #wished-root > div { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+          .one-page-print { display: block !important; width: 100% !important; max-width: none !important; margin: 0 !important; }
         }
       `}</style>
       <PrintableOnePagePlan answers={answers} days={days} />
@@ -1461,8 +1466,11 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
         <div className="text-xs tracking-[0.4em] uppercase mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#9a7b2e' }}>
           Your Wished plan
         </div>
-        <p className="text-sm text-stone-500 mb-6 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
-          Your whole trip, day by day. Tap any day for its full morning, midday and evening plan.
+        <p className="text-sm text-stone-500 mb-5 max-w-2xl" style={{ fontFamily: 'Georgia, serif' }}>
+          Your whole trip, day by day — the scannable version of your plan.
+        </p>
+        <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+          Tap any day to see the detail
         </p>
 
         <div className="space-y-2">
@@ -1523,8 +1531,18 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
                         })}
                       </div>
                     </div>
-                    {/* open / close affordance */}
-                    <span className="shrink-0 text-lg leading-none mt-0.5 select-none no-print" style={{ color: '#9a7b2e' }}>{isOpen ? '−' : '+'}</span>
+                    {/* open / close affordance — labelled so it's obviously tappable */}
+                    <span className="shrink-0 no-print mt-0.5 flex items-center" style={{ color: '#9a7b2e' }}>
+                      {isOpen ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] tracking-[0.12em] uppercase border rounded-sm px-2 py-1 whitespace-nowrap" style={{ fontFamily: 'Helvetica, Arial, sans-serif', borderColor: '#d9c89a' }}>
+                          Close <span className="text-sm leading-none">−</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] tracking-[0.12em] uppercase border rounded-sm px-2 py-1 whitespace-nowrap" style={{ fontFamily: 'Helvetica, Arial, sans-serif', borderColor: '#d9c89a' }}>
+                          View day <span className="text-sm leading-none">+</span>
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </button>
 
