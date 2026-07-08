@@ -59,7 +59,7 @@ function decodePlan(token) {
 
 const STEP_NAMES = {
   1: 'dates', 2: 'party', 3: 'days', 4: 'intensity', 5: 'rhythm',
-  6: 'property', 7: 'lightning', 8: 'dining', 9: 'rides', 10: 'extras', 11: 'rest_days', 12: 'water_park',
+  6: 'property', 7: 'lightning', 8: 'dining', 9: 'extras', 10: 'rest_days', 11: 'water_park',
 };
 function track(event, properties = {}) {
   if (typeof window === 'undefined') return; // browser only
@@ -260,7 +260,6 @@ export default function DisneyPlanner() {
     offPropertyTransport: null,
     lightning: null,
     dining: null,
-    rides: [],
     hopper: null,
     evenings: null,
     arrival: null,
@@ -271,7 +270,7 @@ export default function DisneyPlanner() {
     waterParkOpen: null,
   });
 
-  const totalSteps = 12;
+  const totalSteps = 11;
 
   // ---- Analytics: landing view + completion ----
   const planFiredRef = useRef(false);
@@ -286,11 +285,11 @@ export default function DisneyPlanner() {
     setAnswers(decoded.answers);
     setPinnedDays(decoded.pinnedDays);
     planFiredRef.current = true; // a reopened link isn't a fresh build — don't double-count it
-    setStep(13);
+    setStep(12);
     track('plan_opened_from_link');
   }, []);
   useEffect(() => {
-    if (step !== 13 || planFiredRef.current) return;
+    if (step !== 12 || planFiredRef.current) return;
     planFiredRef.current = true; // count each genuine build once (reset() re-arms it)
     const a = answers;
     let tripDays = null;
@@ -311,7 +310,7 @@ export default function DisneyPlanner() {
       party_adults: a.party.adults, party_teens: a.party.teens, party_kids: a.party.kids, party_under3: a.party.under3,
       intensity: a.intensity, rhythm: a.rhythm,
       property: a.property, lightning: a.lightning, dining: a.dining,
-      hopper: a.hopper, evenings: a.evenings, rides_selected: a.rides?.length || 0,
+      hopper: a.hopper, evenings: a.evenings,
       rest_days: a.restDays, water_park: a.waterParkInterest,
     };
     track('questionnaire_completed', props);
@@ -358,7 +357,7 @@ export default function DisneyPlanner() {
     days: null, customDays: 8, experience: null, intensity: null, rhythm: null,
     property: null, resort: '', offPropertyTransport: null,
     lightning: null, dining: null,
-    rides: [], hopper: null, evenings: null,
+    hopper: null, evenings: null,
     arrival: null, restDays: null, restDayType: null,
     waterParkInterest: null, waterParkCount: null, waterParkOpen: null,
   }); };
@@ -377,14 +376,13 @@ export default function DisneyPlanner() {
       );
       case 7: return answers.lightning !== null;
       case 8: return answers.dining !== null;
-      case 9: return answers.rides.length > 0;
-      case 10: return answers.hopper !== null && answers.evenings !== null;
-      case 11: {
+      case 9: return answers.hopper !== null && answers.evenings !== null;
+      case 10: {
         if (answers.restDays === null) return false;
         if (answers.restDays === 'none') return true;
         return answers.restDayType !== null;
       }
-      case 12: {
+      case 11: {
         const numDays = typeof answers.days === 'number' ? answers.days : 4;
         // Water park step only shown for 5+ day trips — auto-pass if shorter
         if (numDays < 5) return true;
@@ -457,10 +455,9 @@ export default function DisneyPlanner() {
           {step === 6 && <PropertyStep property={answers.property} resort={answers.resort} transport={answers.offPropertyTransport} onProperty={v => update('property', v)} onResort={v => update('resort', v)} onTransport={v => update('offPropertyTransport', v)} />}
           {step === 7 && <LightningStep value={answers.lightning} onChange={v => update('lightning', v)} />}
           {step === 8 && <DiningStep value={answers.dining} onChange={v => update('dining', v)} />}
-          {step === 9 && <RidesStep value={answers.rides} onChange={v => update('rides', v)} />}
-          {step === 10 && <ExtrasStep hopper={answers.hopper} evenings={answers.evenings} onHopper={v => update('hopper', v)} onEvenings={v => update('evenings', v)} />}
-          {step === 11 && <RestDaysStep restDays={answers.restDays} restDayType={answers.restDayType} onRestDays={v => update('restDays', v)} onRestDayType={v => update('restDayType', v)} />}
-          {step === 12 && <WaterParkStep
+          {step === 9 && <ExtrasStep hopper={answers.hopper} evenings={answers.evenings} onHopper={v => update('hopper', v)} onEvenings={v => update('evenings', v)} />}
+          {step === 10 && <RestDaysStep restDays={answers.restDays} restDayType={answers.restDayType} onRestDays={v => update('restDays', v)} onRestDayType={v => update('restDayType', v)} />}
+          {step === 11 && <WaterParkStep
             numDays={typeof answers.days === 'number' ? answers.days : 4}
             interest={answers.waterParkInterest}
             count={answers.waterParkCount}
@@ -473,8 +470,8 @@ export default function DisneyPlanner() {
               if (answers.waterParkInterest === null) update('waterParkInterest', 'no');
             }}
           />}
-          {step === 13 && revealing && <RevealPause />}
-          {step === 13 && !revealing && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
+          {step === 12 && revealing && <RevealPause />}
+          {step === 12 && !revealing && <Output answers={answers} onReset={reset} pinnedDays={pinnedDays} setPinnedDays={setPinnedDays} editingDay={editingDay} setEditingDay={setEditingDay} />}
         </div>
 
         {step > 0 && step <= totalSteps && (
@@ -992,78 +989,6 @@ function DiningStep({ value, onChange }) {
   );
 }
 
-function RidesStep({ value, onChange }) {
-  const ridesByPark = {
-    'Magic Kingdom': [
-      { id: 'tron', label: 'Tron Lightcycle / Run' },
-      { id: 'sevendwarfs', label: 'Seven Dwarfs Mine Train' },
-      { id: 'tiana', label: "Tiana's Bayou Adventure" },
-      { id: 'spacemountain', label: 'Space Mountain' },
-      { id: 'bigthunder', label: 'Big Thunder Mountain' },
-      { id: 'haunted', label: 'Haunted Mansion' },
-      { id: 'pirates', label: 'Pirates of the Caribbean' },
-      { id: 'peterpan', label: "Peter Pan's Flight" },
-    ],
-    'EPCOT': [
-      { id: 'guardians', label: 'Guardians of the Galaxy: Cosmic Rewind' },
-      { id: 'testtrack', label: 'Test Track' },
-      { id: 'frozen', label: 'Frozen Ever After' },
-      { id: 'remy', label: "Remy's Ratatouille Adventure" },
-      { id: 'soarin', label: "Soarin' Around the World" },
-    ],
-    'Hollywood Studios': [
-      { id: 'rise', label: 'Rise of the Resistance' },
-      { id: 'slinky', label: 'Slinky Dog Dash' },
-      { id: 'tot', label: 'Tower of Terror' },
-      { id: 'rnr', label: "Rock 'n' Roller Coaster" },
-      { id: 'smugglers', label: 'Millennium Falcon: Smugglers Run' },
-      { id: 'mmrr', label: "Mickey & Minnie's Runaway Railway" },
-    ],
-    'Animal Kingdom': [
-      { id: 'fop', label: 'Avatar Flight of Passage' },
-      { id: 'navi', label: "Na'vi River Journey" },
-      { id: 'safari', label: 'Kilimanjaro Safaris' },
-      { id: 'everest', label: 'Expedition Everest' },
-    ],
-  };
-
-  const toggle = (id) => {
-    onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id]);
-  };
-
-  return (
-    <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 9" title="Which rides would you hate to miss?" sub="Pick the ones that matter. We'll target these at rope drop and in Lightning Lane recommendations." />
-      <div className="space-y-6">
-        {Object.entries(ridesByPark).map(([park, rides]) => (
-          <div key={park}>
-            <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{park}</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {rides.map(r => (
-                <button
-                  key={r.id}
-                  onClick={() => toggle(r.id)}
-                  className="text-left p-3 transition-all border"
-                  style={{
-                    background: value.includes(r.id) ? '#1c1917' : '#fafaf9',
-                    color: value.includes(r.id) ? '#f4f1ea' : '#1c1917',
-                    borderColor: value.includes(r.id) ? '#1c1917' : '#d6d3d1',
-                  }}
-                >
-                  <div className="text-sm" style={{ fontFamily: 'Georgia, serif' }}>{r.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6 text-sm text-stone-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-        {value.length} selected
-      </div>
-    </div>
-  );
-}
-
 function ExtrasStep({ hopper, evenings, onHopper, onEvenings }) {
   const hopperOpts = [
     { v: 'yes', label: 'Yes, park hopper', sub: 'Hop between parks any time, once you\u2019ve entered your first. ~$80/person extra.' },
@@ -1077,7 +1002,7 @@ function ExtrasStep({ hopper, evenings, onHopper, onEvenings }) {
   ];
   return (
     <div>
-      <StepHeader icon={Compass} eyebrow="Question 10" title="A couple more" sub="Park hopper, and how late the party can stay out." />
+      <StepHeader icon={Compass} eyebrow="Question 9" title="A couple more" sub="Park hopper, and how late the party can stay out." />
       <div className="mb-10">
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Park hopper?</div>
         <div className="space-y-3">
@@ -1109,7 +1034,7 @@ function RestDaysStep({ restDays, restDayType, onRestDays, onRestDayType }) {
   ];
   return (
     <div>
-      <StepHeader icon={Sparkles} eyebrow="Question 11" title="How do you like to recharge?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
+      <StepHeader icon={Sparkles} eyebrow="Question 10" title="How do you like to recharge?" sub="On longer trips, planned breaks make the difference between a good trip and a holiday everyone needs to recover from." />
       <div className={restDays && restDays !== 'none' ? 'mb-10' : ''}>
         <div className="text-xs tracking-[0.3em] uppercase text-stone-500 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Do you want rest days built in?</div>
         <div className="space-y-3">
@@ -1133,7 +1058,7 @@ function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, on
   if (numDays < 5) {
     return (
       <div>
-        <StepHeader icon={Sparkles} eyebrow="Question 12" title="Water parks" sub="Your trip's too short to add a water park day — they need a full day, and you'll get more out of the main parks. Skipping this." />
+        <StepHeader icon={Sparkles} eyebrow="Question 11" title="Water parks" sub="Your trip's too short to add a water park day — they need a full day, and you'll get more out of the main parks. Skipping this." />
       </div>
     );
   }
@@ -1167,7 +1092,7 @@ function WaterParkStep({ numDays, interest, count, open, onInterest, onCount, on
     <div>
       <StepHeader
         icon={Sparkles}
-        eyebrow="Question 12"
+        eyebrow="Question 11"
         title="Water parks?"
         sub="Disney has two — Typhoon Lagoon and Blizzard Beach. Usually only one is open at a time; check Disney's calendar to confirm."
       />
@@ -2465,7 +2390,7 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   const restDayType = a.restDayType || 'full';
   const crowd = date ? estimateCrowd(date, park) : null;
   const dayName = date ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][date.getDay()] : null;
-  const wantedRides = a.rides || [];
+  const thrill = a.intensity;
   const resort = onProperty ? a.resort : null;
 
   if (park === 'Travel day') {
@@ -2527,10 +2452,10 @@ function generateRationale(park, dayIndex, totalDays, a, date, isRepeatVisit, se
   }
 
   const headline = buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungKids, allCoasters, calmOnly, splitIntensity, isRepeatVisit, isDay1ShortVisit, arrival });
-  const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport, isRepeatVisit });
-  const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit });
+  const morning = buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, thrill, arrival, isDay1ShortVisit, resort, offPropertyTransport: a.offPropertyTransport, isRepeatVisit });
+  const afternoon = buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, arrival, isDay1ShortVisit, isRepeatVisit });
   const partyNight = park === 'Magic Kingdom' ? partyKind(date) : null; // 'halloween' | 'christmas' | null
-  const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: a.hopper, resort, partyNight });
+  const evening = buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEvenings, earlyEvenings, hasYoungKids, ropeDrop, isDay1ShortVisit, isRepeatVisit, arrival, hopper: effectiveHopper(a), resort, partyNight });
 
   return { headline, morning, afternoon, evening, eveningPark: splitEveningPark };
 }
@@ -2574,22 +2499,22 @@ function buildHeadline({ park, dayName, crowd, isArrival, isDeparture, hasYoungK
   return crowdLead;
 }
 
-function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, wantedRides, arrival, isDay1ShortVisit, resort, offPropertyTransport, isRepeatVisit }) {
+function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProperty, thrill, arrival, isDay1ShortVisit, resort, offPropertyTransport, isRepeatVisit }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return "Travel and check in. Get to the resort, drop bags, eat early.";
     if (arrival === 'midday') return "Travel. Land, get to the resort, drop bags as fast as you can.";
   }
   if (isArrival) return "Get to the park around lunch. Don't try to do too much.";
   if (isRepeatVisit) {
-    const llTargets = getLLTargets(park, wantedRides);
+    const llTargets = getLLTargets(park, thrill);
     const llLine = useLLToday && llTargets.length ? ` Save Multi Pass for ${llTargets.slice(0, 2).join(' and ')}.` : '';
     if (park === 'Magic Kingdom') return `You cleared the mountains last time, so ease into this one — a relaxed start for anything worth repeating, or Tron if it beat you on day one.${llLine}`;
     if (park === 'EPCOT') return `Future World's headliners are behind you, so this morning is for the pavilions and rides you skipped — and the festival booths before they get busy.${llLine}`;
     if (park === 'Hollywood Studios') return `You've done Galaxy's Edge once, so go straight back for Rise of the Resistance at rope drop if it got away, then re-ride your favourites.${llLine}`;
     return `Second time here — you know the layout now, so head for whatever you ran out of time for. A calmer start than the first visit.${llLine}`;
   }
-  const ropeDropTargets = getRopeDropTargets(park, wantedRides);
-  const llTargets = getLLTargets(park, wantedRides);
+  const ropeDropTargets = getRopeDropTargets(park, thrill);
+  const llTargets = getLLTargets(park, thrill);
   if (lateStart) return `Late start today — arrive around 11am. Skip rope drop and use Multi Pass for ${llTargets.slice(0,2).join(' and ') || 'the headliners'}.`;
   let transportLine = '';
   if (resort && onProperty) {
@@ -2613,7 +2538,7 @@ function buildMorning({ park, useLLToday, isArrival, ropeDrop, lateStart, onProp
   return prose;
 }
 
-function buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, wantedRides, arrival, isDay1ShortVisit, isRepeatVisit }) {
+function buildAfternoon({ park, splitRhythm, splitEveningPark, isDeparture, useLLToday, arrival, isDay1ShortVisit, isRepeatVisit }) {
   if (isDay1ShortVisit) {
     if (arrival === 'evening') return "Resort check-in. Maybe pool for an hour if there's time.";
     if (arrival === 'midday') return `Get to ${park} by 3pm. Head straight for one or two headliners on standby — don't bother with Multi Pass for a half-day.`;
@@ -2653,7 +2578,7 @@ function buildEvening({ park, splitEveningPark, isArrival, isDeparture, lateEven
     }[splitEveningPark] || "A fresh park for the evening.";
     return `Hop to ${splitEveningPark} from around 5pm. ${reason} Evening queues fall fast in the last two hours, so this is prime ride time — the Park Hopper add-on on your tickets lets you hop over once you've tapped into your first park.`;
   }
-  if (isRepeatVisit && (hopper === 'yes' || hopper === 'unsure')) {
+  if (isRepeatVisit && hopper === 'yes') {
     const hopTarget = pickEveningHopTarget(park, resort);
     if (hopTarget) return `Park hopper move: from 5pm, hop to ${hopTarget} for the evening — ${getEveningHopReason(hopTarget)}.`;
   }
@@ -2699,7 +2624,30 @@ function getEveningHopReason(park) {
   return reasons[park] || '';
 }
 
-function getRopeDropTargets(park, wantedRides) {
+// Each headliner tagged by intensity tier: 1 gentle (dark rides, boats, shows),
+// 2 family (family coasters, splash, trackless), 3 thrill (big/intense coasters, drops).
+// This is what lets Q4 drive ride targeting — no separate hand-pick question needed.
+const RIDE_TIER = {
+  sevendwarfs: 2, tron: 3, tiana: 2, peterpan: 1, spacemountain: 3, bigthunder: 2,
+  guardians: 3, remy: 1, frozen: 1, testtrack: 3, slinky: 2, rise: 2, mmrr: 1,
+  tot: 3, fop: 3, navi: 1, everest: 3, safari: 1,
+};
+
+// Filter a park's ordered target list to the tiers that match the party's thrill appetite (Q4),
+// preserving headliner priority within the filter.
+function filterByThrill(list, intensity) {
+  if (intensity === 'all') {
+    return [...list].sort((a, b) => (RIDE_TIER[b.id] || 2) - (RIDE_TIER[a.id] || 2)); // biggest first
+  }
+  if (intensity === 'family') return list.filter(t => (RIDE_TIER[t.id] || 2) <= 2); // no big coasters
+  if (intensity === 'calm') {
+    return list.filter(t => (RIDE_TIER[t.id] || 2) <= 2)
+               .sort((a, b) => (RIDE_TIER[a.id] || 2) - (RIDE_TIER[b.id] || 2)); // gentlest first
+  }
+  return list; // 'split' or unset: keep the default headliner priority, plan covers everything
+}
+
+function getRopeDropTargets(park, intensity) {
   const allTargets = {
     'Magic Kingdom': [
       { id: 'sevendwarfs', name: 'Seven Dwarfs Mine Train' },
@@ -2725,13 +2673,13 @@ function getRopeDropTargets(park, wantedRides) {
       { id: 'everest', name: 'Expedition Everest' },
     ],
   };
-  const targets = allTargets[park] || [];
-  const wanted = targets.filter(t => wantedRides.includes(t.id));
-  if (wanted.length > 0) return wanted.slice(0, 3).map(t => t.name);
-  return targets.slice(0, 2).map(t => t.name);
+  const base = allTargets[park] || [];
+  const filtered = filterByThrill(base, intensity);
+  const src = filtered.length ? filtered : base;
+  return src.slice(0, 2).map(t => t.name);
 }
 
-function getLLTargets(park, wantedRides) {
+function getLLTargets(park, intensity) {
   const priorities = {
     'Magic Kingdom': [
       { id: 'sevendwarfs', name: 'Seven Dwarfs (Single Pass)' },
@@ -2760,10 +2708,10 @@ function getLLTargets(park, wantedRides) {
       { id: 'everest', name: 'Expedition Everest' },
     ],
   };
-  const all = priorities[park] || [];
-  const wanted = all.filter(p => wantedRides.includes(p.id));
-  if (wanted.length > 0) return wanted.map(p => p.name);
-  return all.slice(0, 3).map(p => p.name);
+  const base = priorities[park] || [];
+  const filtered = filterByThrill(base, intensity);
+  const src = filtered.length ? filtered : base;
+  return src.slice(0, 3).map(p => p.name);
 }
 
 function detectFlag(park, dayIndex, totalDays, a, date) {
@@ -2813,12 +2761,28 @@ function generateHeadline(a) {
 // morning/evening split only works on-property with a Park Hopper (fast transit makes the midday
 // return cheap). So "unsure" resolves from property + hopper, and a split without a hopper — which
 // is impossible — falls back to one park.
+// Shared hopper recommendation — used by BOTH the action checklist and the rhythm engine,
+// so a "Recommend" answer that comes back "worth it" actually builds split days, and one that
+// comes back "skip" builds single-park. The verdict and the itinerary can't disagree.
+function shouldRecommendHopper(a) {
+  const onProperty = a.property === 'on';
+  const numDays = typeof a.days === 'number' ? a.days : 4;
+  return numDays <= 4 || a.evenings === 'late' || onProperty;
+}
+
+// Resolve the "Recommend" (unsure) option into a concrete yes/no for all engine logic.
+function effectiveHopper(a) {
+  if (a.hopper !== 'unsure') return a.hopper;
+  return shouldRecommendHopper(a) ? 'yes' : 'no';
+}
+
 function resolveRhythm(a) {
+  const hop = effectiveHopper(a);
   let r = a.rhythm;
   if (r === 'unsure' || !r) {
-    r = (a.property === 'on' && a.hopper === 'yes') ? 'split' : 'rope';
+    r = (a.property === 'on' && hop === 'yes') ? 'split' : 'rope';
   }
-  if (r === 'split' && a.hopper === 'no') r = 'rope';
+  if (r === 'split' && hop === 'no') r = 'rope';
   return r;
 }
 
@@ -2927,13 +2891,12 @@ function holidayStyle(a, days) {
   const thrill = a.intensity;
   const rhythm = resolveRhythm(a);
   const noRest = a.restDays === 'none';
-  const numRides = (a.rides || []).length;
   const parkDays = days.filter(d => isParkName(d.park)).length;
 
   if (thrill === 'all' && rhythm === 'rope' && noRest && (a.lightning === 'always' || a.lightning === 'smart')) {
     return { name: 'Big Day Strategist', blurb: 'You came to do it all, and you have the stamina for it. This plan keeps the days long and the headliners front-loaded.' };
   }
-  if (thrill === 'all' && numRides >= 4) {
+  if (thrill === 'all') {
     return { name: 'Ride-Focused Planner', blurb: 'The headliners come first; everything else is built around protecting your shot at them.' };
   }
   if (thrill === 'calm' && (rhythm === 'morning' || rhythm === 'late' || !noRest)) {
@@ -3129,7 +3092,7 @@ function generateActions(a, days) {
   actions.push({ category: 'Tickets', what: 'Buy park tickets via Undercover Tourist', when: 'Anytime — saves 3-5% versus Disney direct' });
   if (a.hopper === 'yes') actions.push({ category: 'Tickets', what: 'Add Park Hopper to your tickets', when: 'Adds ~$80/person — hop between parks any time once you\u2019ve entered your first' });
   else if (a.hopper === 'unsure') {
-    const recommendHopper = numDays <= 4 || a.evenings === 'late' || onProperty;
+    const recommendHopper = shouldRecommendHopper(a);
     actions.push({
       category: 'Tickets',
       what: recommendHopper ? 'Recommend Park Hopper — worth ~$80/person' : 'Skip Park Hopper',
