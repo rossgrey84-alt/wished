@@ -1647,6 +1647,18 @@ function Output({ answers, onReset, pinnedDays, setPinnedDays, editingDay, setEd
       </div>
 
       {(() => {
+        const wp = days._waterParks;
+        if (!wp || wp.trimmed <= 0) return null;
+        const parkDays = days.filter(d => ['Magic Kingdom', 'EPCOT', 'Hollywood Studios', 'Animal Kingdom'].includes(d.park)).length;
+        return (
+          <div className="mb-12 border-l-2 pl-4 max-w-2xl" style={{ borderColor: '#d8d1c2' }}>
+            <div className="text-[11px] tracking-[0.15em] uppercase text-stone-500 mb-1" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>A note on your water park days</div>
+            <p className="text-stone-700 leading-relaxed">You asked for {wp.requested} water park {wp.requested === 1 ? 'day' : 'days'}, but on a trip this length that would leave too few days for the four main parks — so we've set {wp.total} and kept {parkDays} theme park {parkDays === 1 ? 'day' : 'days'}. If you'd rather flip that balance, add days to your trip or drop a park day using "Switch this day" below.</p>
+          </div>
+        );
+      })()}
+
+      {(() => {
         const epcotCount = days.filter(d => d.park === 'EPCOT' || (d.rationale && d.rationale.eveningPark === 'EPCOT')).length;
         if (!(epcotCount >= 3 && answers.property === 'on' && isResortSkyliner(answers.resort))) return null;
         return (
@@ -1826,7 +1838,7 @@ function generateStubDays(a, pinnedDays = {}) {
   const mkBump = allocation._mkBump || { bumped: false };
   const hasTravelDay = allocation.includes('Travel day');
   const visitCounts = {};
-  return sequence.map((park, i) => {
+  const built = sequence.map((park, i) => {
     const count = (visitCounts[park] || 0) + 1;
     visitCounts[park] = count;
     const isRepeatVisit = count > 1;
@@ -1856,6 +1868,8 @@ function generateStubDays(a, pinnedDays = {}) {
       flag,
     };
   });
+  built._waterParks = allocation._waterParks || null;
+  return built;
 }
 
 function getDateForDay(startStr, dayIndex) {
@@ -1965,7 +1979,7 @@ function allocateParks(a) {
   const calmOnly = a.intensity === 'calm';
   const restPref = a.restDays || 'none';
   const arrival = a.arrival || 'morning';
-  const waterParkDays = (a.waterParkInterest === 'yes' || a.waterParkInterest === 'maybe')
+  const wantWaterParks = (a.waterParkInterest === 'yes' || a.waterParkInterest === 'maybe')
     ? (a.waterParkCount || 0)
     : 0;
   const priority = ['Magic Kingdom', 'Hollywood Studios', 'EPCOT', 'Animal Kingdom'];
@@ -1983,7 +1997,40 @@ function allocateParks(a) {
   if (restPref === 'middle' && numDays >= 6) restDayCount = 1;
   else if (restPref === 'spread' && numDays >= 5) restDayCount = Math.floor((numDays - 4) / 4) + 1;
   else if (restPref === 'flexible' && numDays >= 7) restDayCount = Math.floor(numDays / 5);
-  const parkDayCount = numDays - restDayCount - waterParkDays - (day1NonPark ? 1 : 0);
+
+  // Work out WHERE rest days actually land first, then reconcile the count to what really got placed
+  // (the spread/flexible spacing can yield fewer slots than the raw count). Downstream day maths and
+  // the water-park dedup below are then based on reality, not an intended-but-unplaced number.
+  let restDayPositions = [];
+  if (restPref === 'middle' && restDayCount === 1) {
+    restDayPositions = [Math.floor(numDays * 0.6)];
+  } else if (restPref === 'spread') {
+    let pos = Math.floor(numDays * 0.5);
+    while (pos < numDays - 1) { restDayPositions.push(pos); pos += 5; }
+  } else if (restPref === 'flexible') {
+    if (restDayCount === 1) {
+      restDayPositions = [Math.floor(numDays * 0.6)];
+    } else if (restDayCount === 2) {
+      restDayPositions = [Math.floor(numDays * 0.45), Math.floor(numDays * 0.8)];
+    } else {
+      const interval = Math.floor((numDays - 2) / restDayCount);
+      for (let i = 1; i <= restDayCount; i++) restDayPositions.push(1 + i * interval);
+    }
+  }
+  restDayCount = restDayPositions.length;
+
+  // Water parks and "water-park rest days" are the same concept asked two ways. A rest day set to
+  // "water park" already counts toward the water-park total — don't stack them on top. And never let
+  // the combination bury the theme parks: protect a floor of park days, trimming dedicated water
+  // parks first (a deliberately-chosen rest day is never trimmed).
+  const travelDays = day1NonPark ? 1 : 0;
+  const restsAreWaterParks = a.restDayType === 'waterpark' ? restDayCount : 0;
+  const parkFloor = Math.min(3, Math.max(0, numDays - restDayCount - travelDays));
+  const maxTotalWaterParks = Math.max(restsAreWaterParks, numDays - restDayCount - travelDays - parkFloor);
+  const totalWaterParks = Math.min(Math.max(wantWaterParks, restsAreWaterParks), maxTotalWaterParks);
+  const waterParkDays = Math.max(0, totalWaterParks - restsAreWaterParks); // dedicated (non-rest) water park days
+  const waterParksTrimmed = Math.max(0, wantWaterParks - totalWaterParks); // requested but cut to protect parks
+  const parkDayCount = numDays - restDayCount - waterParkDays - travelDays;
   let parkSequence = [];
   if (parkDayCount <= 4) {
     parkSequence = priority.slice(0, parkDayCount);
@@ -2001,31 +2048,6 @@ function allocateParks(a) {
   }
   const allocation = [];
   if (day1NonPark) allocation.push('Travel day');
-  let restDayPositions = [];
-  if (restPref === 'middle' && restDayCount === 1) {
-    // Land at ~60% through the trip — after fatigue builds, before final push
-    restDayPositions = [Math.floor(numDays * 0.6)];
-  } else if (restPref === 'spread') {
-    // First rest day at ~50%, then every 4-5 days
-    let pos = Math.floor(numDays * 0.5);
-    while (pos < numDays - 1) {
-      restDayPositions.push(pos);
-      pos += 5;
-    }
-  } else if (restPref === 'flexible') {
-    // Spread weighted toward the second half of the trip
-    if (restDayCount === 1) {
-      restDayPositions = [Math.floor(numDays * 0.6)];
-    } else if (restDayCount === 2) {
-      restDayPositions = [Math.floor(numDays * 0.45), Math.floor(numDays * 0.8)];
-    } else {
-      // 3+ rest days — even spacing but offset from start
-      const interval = Math.floor((numDays - 2) / restDayCount);
-      for (let i = 1; i <= restDayCount; i++) {
-        restDayPositions.push(1 + i * interval);
-      }
-    }
-  }
   // Water park positioning — absolute day indices (0-indexed)
   // First one around day 4, rest spaced through the trip. Never days 1-2, never departure day.
   let waterParkPositions = [];
@@ -2105,6 +2127,7 @@ function allocateParks(a) {
     }
   }
   allocation._locked = lockedPositions;
+  allocation._waterParks = { total: totalWaterParks, dedicated: waterParkDays, fromRest: restsAreWaterParks, requested: wantWaterParks, trimmed: waterParksTrimmed };
   return allocation;
 }
 
